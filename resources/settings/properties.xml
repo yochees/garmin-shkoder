@@ -1,0 +1,5 @@
+<properties>
+    <property id="LeadingZero" type="boolean">true</property>
+    <property id="LeftField" type="number">1</property>
+    <property id="RightField" type="number">2</property>
+</properties>

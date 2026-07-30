@@ -1,0 +1,463 @@
+import Toybox.ActivityMonitor;
+import Toybox.Application;
+import Toybox.Graphics;
+import Toybox.Lang;
+import Toybox.Math;
+import Toybox.System;
+import Toybox.Time;
+import Toybox.Time.Gregorian;
+import Toybox.WatchUi;
+
+// ---------------------------------------------------------------------------
+// Layout constants. Everything that controls the look lives here - tune these
+// in the simulator, they are all in pixels on the 280x280 screen.
+// ---------------------------------------------------------------------------
+
+const TIME_Y = 140;         // vertical centre of the big time block
+const MAX_TIME_W = 264;     // step the font down if the time is wider than this
+
+// Vector face for the clock. Measured digit advances on this device at size
+// 100, as "1" / "8":
+//   PridiSemiBoldGarmin   28 / 38   <- the only proportional one, but quirky
+//   NotoSansSCMedium      39 / 39
+//   BionicSemiBold        41 / 41   <- what FONT_NUMBER_* is built from
+//   RobotoCondensedBold   43 / 43
+//   NanumGothicExtraBold  53 / 53   <- the fattest
+// Every plain sans on the device is tabular, so "1" sits in a cell as wide as
+// "8". TRIM_ONE claws that cell back to fake proportional spacing.
+// Set TIME_VECTOR to false to go back to the bitmap FONT_NUMBER_THAI_HOT.
+const TIME_VECTOR = true;
+const TIME_FACE = "BionicSemiBold";
+const TIME_SIZE = 136;      // requested pixel height; shrinks to fit if needed
+const TRIM_ONE = 0.28;      // fraction of the "1" cell to claw back (see below)
+
+const FIELD_Y = 208;        // vertical centre of the complication row
+const FIELD_GAP = 10;       // padding either side of the "|" separator
+const FIELD_COLOR = Graphics.COLOR_LT_GRAY;
+
+// Complications use the bitmap FONT_TINY (RobotoCondensed-Bold, 26px). The
+// bitmap sizes go 19 (XTINY) / 26 (TINY) / 29 (SMALL) / 33 (MEDIUM). Setting
+// FIELD_VECTOR to true instead gets any size in between, but the only Bionic
+// bitmap near this size is FONT_NUMBER_MILD at 48px, far too big.
+const FIELD_VECTOR = false;
+const FIELD_FACE = "BionicSemiBold";
+const FIELD_SIZE = 25;
+
+const MARK_RADIUS = 133;    // radius of the marker centre
+const MARK_W = 3;           // tangential width
+const MARK_LEN = 6;         // radial length (2:1 against the width)
+
+//! Set to -1 to show the real step count.
+const MOCK_STEPS = -1;
+
+enum FieldType {
+    FIELD_OFF = 0,
+    FIELD_DATE = 1,
+    FIELD_STEPS = 2,
+    FIELD_BATTERY = 3,
+    FIELD_CALORIES = 4,
+    FIELD_DISTANCE = 5,
+    FIELD_NOTIFICATIONS = 6
+}
+
+//! Big centred time, two minimalist complications below it, and a single
+//! second marker sweeping the rim, kept alive by onPartialUpdate().
+class ClassicDigitalView extends WatchUi.WatchFace {
+
+    private var _cx as Number = 140;
+    private var _cy as Number = 140;
+
+    private var _isAwake as Boolean = true;
+    private var _partialUpdatesAllowed as Boolean = false;
+    private var _prevSec as Number = -1;
+
+    private var _timeFont as FontType = Graphics.FONT_NUMBER_THAI_HOT;
+    private var _fieldFont as FontType = Graphics.FONT_TINY;
+
+    //! Holds the static face (time + complications) so a partial update can
+    //! restore whatever the marker was covering instead of blanking it.
+    private var _buffer as BufferedBitmap?;
+
+    // Trig for the 60 marker positions, computed once.
+    private var _sinT as Array<Float>;
+    private var _cosT as Array<Float>;
+
+    // Settings
+    private var _leadingZero as Boolean = true;
+    private var _leftField as Number = FIELD_DATE;
+    private var _rightField as Number = FIELD_STEPS;
+
+    public function initialize() {
+        WatchFace.initialize();
+
+        var sinT = new Array<Float>[60];
+        var cosT = new Array<Float>[60];
+        for (var s = 0; s < 60; s++) {
+            var a = s * 6.0 * Math.PI / 180.0;
+            sinT[s] = Math.sin(a).toFloat();
+            cosT[s] = Math.cos(a).toFloat();
+        }
+        _sinT = sinT;
+        _cosT = cosT;
+
+        // On this device (MIP) this is true; on AMOLED siblings it is not,
+        // and the face degrades to minute-only updates on its own.
+        _partialUpdatesAllowed = (WatchUi.WatchFace has :onPartialUpdate);
+
+        loadSettings();
+    }
+
+    public function onLayout(dc as Dc) as Void {
+        _cx = dc.getWidth() / 2;
+        _cy = dc.getHeight() / 2;
+        _timeFont = pickTimeFont(dc);
+        _fieldFont = pickFieldFont();
+
+        // Comes out of the 1 MB graphics pool, not the 128 kB app budget.
+        if (Graphics has :createBufferedBitmap) {
+            var ref = Graphics.createBufferedBitmap({
+                :width => dc.getWidth(),
+                :height => dc.getHeight()
+            });
+            _buffer = ref.get() as BufferedBitmap?;
+        }
+    }
+
+    //! Prefer the vector face at the largest size that still fits four wide
+    //! digits, falling back to the built-in bitmap numerals.
+    private function pickTimeFont(dc as Dc) as FontType {
+        if (TIME_VECTOR && (Graphics has :getVectorFont)) {
+            var size = TIME_SIZE;
+            while (size >= 60) {
+                var vf = Graphics.getVectorFont({:face => TIME_FACE, :size => size});
+                if (vf != null && dc.getTextWidthInPixels("8888", vf) <= MAX_TIME_W) {
+                    return vf;
+                }
+                size -= 4;
+            }
+        }
+
+        var candidates = [
+            Graphics.FONT_NUMBER_THAI_HOT,
+            Graphics.FONT_NUMBER_HOT,
+            Graphics.FONT_NUMBER_MEDIUM
+        ];
+        for (var i = 0; i < candidates.size(); i++) {
+            var f = candidates[i] as FontDefinition;
+            if (dc.getTextWidthInPixels("8888", f) <= MAX_TIME_W) {
+                return f;
+            }
+        }
+        return Graphics.FONT_NUMBER_MEDIUM;
+    }
+
+    private function pickFieldFont() as FontType {
+        if (FIELD_VECTOR && (Graphics has :getVectorFont)) {
+            var vf = Graphics.getVectorFont({:face => FIELD_FACE, :size => FIELD_SIZE});
+            if (vf != null) {
+                return vf;
+            }
+        }
+        return Graphics.FONT_TINY;
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings
+    // -----------------------------------------------------------------------
+
+    public function loadSettings() as Void {
+        _leadingZero = boolSetting("LeadingZero", true);
+        _leftField = numberSetting("LeftField", FIELD_DATE);
+        _rightField = numberSetting("RightField", FIELD_STEPS);
+    }
+
+    private function numberSetting(key as String, fallback as Number) as Number {
+        try {
+            var v = Application.Properties.getValue(key);
+            if (v instanceof Lang.Number) {
+                return v;
+            }
+            if (v instanceof Lang.Float) {
+                return v.toNumber();
+            }
+        } catch (e) {
+            // property missing on first run - fall through
+        }
+        return fallback;
+    }
+
+    private function boolSetting(key as String, fallback as Boolean) as Boolean {
+        try {
+            var v = Application.Properties.getValue(key);
+            if (v instanceof Lang.Boolean) {
+                return v;
+            }
+        } catch (e) {
+        }
+        return fallback;
+    }
+
+    // -----------------------------------------------------------------------
+    // Full redraw - runs once a minute, plus on wake and on settings changes
+    // -----------------------------------------------------------------------
+
+    public function onUpdate(dc as Dc) as Void {
+        dc.clearClip();
+
+        var buf = _buffer;
+        var target = (buf != null) ? buf.getDc() : dc;
+
+        target.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        target.clear();
+        drawTime(target);
+        drawFields(target);
+
+        if (buf != null) {
+            dc.drawBitmap(0, 0, buf);
+        }
+
+        var sec = System.getClockTime().sec;
+        // Only show a second marker if it will actually keep moving.
+        if (_isAwake || _partialUpdatesAllowed) {
+            drawSecondMarks(dc, sec);
+        }
+        _prevSec = sec;
+    }
+
+    //! One string, no colon, no manual tracking - the font's own metrics decide
+    //! the spacing, which is what keeps "1422" and "1500" optically consistent.
+    private function drawTime(dc as Dc) as Void {
+        // Always 24 hour, regardless of the system setting.
+        var clock = System.getClockTime();
+        var hourStr = _leadingZero ? clock.hour.format("%02d") : clock.hour.format("%d");
+        var digits = hourStr + clock.min.format("%02d");
+        var count = digits.length();
+
+        // Advance each digit by its own trimmed cell rather than the font's
+        // tabular one, so a "1" no longer leaves a hole beside it.
+        var cells = new Array<Number>[count];
+        var total = 0;
+        for (var i = 0; i < count; i++) {
+            var w = dc.getTextWidthInPixels(glyphAt(digits, i), _timeFont);
+            cells[i] = glyphAt(digits, i).equals("1") ? w - (w * TRIM_ONE).toNumber() : w;
+            total += cells[i];
+        }
+
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        var just = Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER;
+        var x = _cx - total / 2;
+
+        for (var i = 0; i < count; i++) {
+            var g = glyphAt(digits, i);
+            var full = dc.getTextWidthInPixels(g, _timeFont);
+            // Keep the ink centred inside the narrowed cell.
+            dc.drawText(x - (full - cells[i]) / 2, TIME_Y, _timeFont, g, just);
+            x += cells[i];
+        }
+    }
+
+    private function glyphAt(s as String, i as Number) as String {
+        var g = s.substring(i, i + 1);
+        return (g == null) ? "" : g;
+    }
+
+    // -----------------------------------------------------------------------
+    // Complication row - numbers only, separated by a dim pipe
+    // -----------------------------------------------------------------------
+
+    private function drawFields(dc as Dc) as Void {
+        var lTxt = fieldText(_leftField);
+        var rTxt = fieldText(_rightField);
+
+        var lw = (lTxt == null) ? 0 : dc.getTextWidthInPixels(lTxt, _fieldFont);
+        var rw = (rTxt == null) ? 0 : dc.getTextWidthInPixels(rTxt, _fieldFont);
+        var both = (lTxt != null) && (rTxt != null);
+        var sw = both ? dc.getTextWidthInPixels("|", _fieldFont) : 0;
+
+        var total = lw + rw;
+        if (both) {
+            total += FIELD_GAP * 2 + sw;
+        }
+
+        var just = Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER;
+        var x = _cx - total / 2;
+
+        dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
+        if (lTxt != null) {
+            dc.drawText(x, FIELD_Y, _fieldFont, lTxt, just);
+            x += lw;
+        }
+
+        if (both) {
+            x += FIELD_GAP;
+            dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(x, FIELD_Y, _fieldFont, "|", just);
+            x += sw + FIELD_GAP;
+            dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
+        }
+
+        if (rTxt != null) {
+            dc.drawText(x, FIELD_Y, _fieldFont, rTxt, just);
+        }
+    }
+
+    private function fieldText(field as Number) as String? {
+        switch (field) {
+            case FIELD_DATE: {
+                var d = Gregorian.info(Time.now(), Time.FORMAT_MEDIUM);
+                return Lang.format("$1$ $2$", [d.day_of_week, d.day.format("%d")]);
+            }
+
+            case FIELD_STEPS: {
+                if (MOCK_STEPS >= 0) {
+                    return MOCK_STEPS.format("%d");
+                }
+                var steps = ActivityMonitor.getInfo().steps;
+                return (steps == null) ? "--" : steps.format("%d");
+            }
+
+            case FIELD_BATTERY: {
+                return System.getSystemStats().battery.toNumber().format("%d") + "%";
+            }
+
+            case FIELD_CALORIES: {
+                var cal = ActivityMonitor.getInfo().calories;
+                return (cal == null) ? "--" : cal.format("%d");
+            }
+
+            case FIELD_DISTANCE: {
+                var cm = ActivityMonitor.getInfo().distance;
+                if (cm == null) {
+                    return "--";
+                }
+                if (System.getDeviceSettings().distanceUnits == System.UNIT_METRIC) {
+                    return (cm / 100000.0).format("%.1f") + "km";
+                }
+                return (cm / 160934.4).format("%.1f") + "mi";
+            }
+
+            case FIELD_NOTIFICATIONS: {
+                var n = System.getDeviceSettings().notificationCount;
+                return (n == null) ? "0" : n.format("%d");
+            }
+        }
+        return null;
+    }
+
+    // -----------------------------------------------------------------------
+    // The moving second marker: a single mark, twice as long radially as it
+    // is wide, so it stays radial at every position on the rim.
+    // -----------------------------------------------------------------------
+
+    //! Four corners of the marker, built from the radial and tangential unit
+    //! vectors at second s.
+    private function markCorners(s as Number) as Array<[Numeric, Numeric]> {
+        var ux = _sinT[s];          // radial, pointing outwards
+        var uy = -_cosT[s];
+        var vx = _cosT[s];          // tangential
+        var vy = _sinT[s];
+
+        var cxp = _cx + MARK_RADIUS * ux;
+        var cyp = _cy + MARK_RADIUS * uy;
+
+        var hl = MARK_LEN / 2.0;
+        var hw = MARK_W / 2.0;
+
+        return [
+            [(cxp - hl * ux - hw * vx).toNumber(), (cyp - hl * uy - hw * vy).toNumber()],
+            [(cxp + hl * ux - hw * vx).toNumber(), (cyp + hl * uy - hw * vy).toNumber()],
+            [(cxp + hl * ux + hw * vx).toNumber(), (cyp + hl * uy + hw * vy).toNumber()],
+            [(cxp - hl * ux + hw * vx).toNumber(), (cyp - hl * uy + hw * vy).toNumber()]
+        ];
+    }
+
+    private function drawSecondMarks(dc as Dc, s as Number) as Void {
+        dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
+        dc.fillPolygon(markCorners(s));
+    }
+
+    //! Bounding box of the marker at second s.
+    private function marksBox(s as Number) as Array<Number> {
+        var pts = markCorners(s);
+        var x0 = pts[0][0];
+        var y0 = pts[0][1];
+        var x1 = x0;
+        var y1 = y0;
+
+        for (var i = 1; i < pts.size(); i++) {
+            var p = pts[i];
+            if (p[0] < x0) { x0 = p[0]; }
+            if (p[1] < y0) { y0 = p[1]; }
+            if (p[0] > x1) { x1 = p[0]; }
+            if (p[1] > y1) { y1 = p[1]; }
+        }
+
+        var pad = 2;
+        x0 -= pad;
+        y0 -= pad;
+        x1 += pad;
+        y1 += pad;
+
+        if (x0 < 0) { x0 = 0; }
+        if (y0 < 0) { y0 = 0; }
+        if (x1 > _cx * 2 - 1) { x1 = _cx * 2 - 1; }
+        if (y1 > _cy * 2 - 1) { y1 = _cy * 2 - 1; }
+
+        return [x0, y0, x1 - x0 + 1, y1 - y0 + 1];
+    }
+
+    //! Repaint just the box around one second position by blitting the static
+    //! face back, so the marker can pass over the digits without eating them.
+    private function repaintSecond(dc as Dc, s as Number, highlight as Boolean) as Void {
+        var box = marksBox(s);
+        dc.setClip(box[0], box[1], box[2], box[3]);
+
+        var buf = _buffer;
+        if (buf != null) {
+            dc.drawBitmap(0, 0, buf);
+        } else {
+            dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+            dc.clear();
+        }
+
+        if (highlight) {
+            drawSecondMarks(dc, s);
+        }
+        dc.clearClip();
+    }
+
+    //! Called once a second in low-power mode. Keep this cheap - the device
+    //! measures how long it takes and will cut us off if we overspend.
+    public function onPartialUpdate(dc as Dc) as Void {
+        if (!_partialUpdatesAllowed) {
+            return;
+        }
+
+        var sec = System.getClockTime().sec;
+        if (sec == _prevSec) {
+            return;
+        }
+
+        if (_prevSec >= 0) {
+            repaintSecond(dc, _prevSec, false);
+        }
+        repaintSecond(dc, sec, true);
+        _prevSec = sec;
+    }
+
+    // -----------------------------------------------------------------------
+
+    public function onExitSleep() as Void {
+        _isAwake = true;
+    }
+
+    public function onEnterSleep() as Void {
+        _isAwake = false;
+        WatchUi.requestUpdate();
+    }
+
+    public function disablePartialUpdates() as Void {
+        _partialUpdatesAllowed = false;
+        WatchUi.requestUpdate();
+    }
+}

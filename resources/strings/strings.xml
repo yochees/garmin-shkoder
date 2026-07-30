@@ -1,0 +1,14 @@
+<strings>
+    <string id="AppName">Digital Classic</string>
+    <string id="SettLeadingZero">Leading zero on hour</string>
+    <string id="SettLeftField">Left field</string>
+    <string id="SettRightField">Right field</string>
+
+    <string id="FieldOff">Off</string>
+    <string id="FieldDate">Date</string>
+    <string id="FieldSteps">Steps</string>
+    <string id="FieldBattery">Battery</string>
+    <string id="FieldCalories">Calories</string>
+    <string id="FieldDistance">Distance</string>
+    <string id="FieldNotifications">Notifications</string>
+</strings>

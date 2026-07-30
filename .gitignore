@@ -1,0 +1,9 @@
+bin/
+*.iq
+
+# Compiled sideload helper - rebuild with the command in tools/mtp-push.c
+tools/mtp-push
+# Signing key - keep it, but out of the repo. Losing it means you can never
+# publish an update to the same Connect IQ store entry.
+developer_key.pem
+developer_key.der
