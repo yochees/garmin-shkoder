@@ -2,4 +2,11 @@
     <property id="LeadingZero" type="boolean">true</property>
     <property id="LeftField" type="number">1</property>
     <property id="RightField" type="number">2</property>
+
+    <!-- Extra time zone row above the time. Offset is hours from UTC and takes
+         halves and quarters (5.5 = India, -3.5 = Newfoundland). It is a fixed
+         offset, so it has to be changed by hand when that zone switches DST. -->
+    <property id="ShowExtraZone" type="boolean">false</property>
+    <property id="ExtraZoneOffset" type="float">0.0</property>
+    <property id="ExtraZoneLabel" type="string">UTC</property>
 </properties>

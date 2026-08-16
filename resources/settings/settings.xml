@@ -4,6 +4,18 @@
         <settingConfig type="boolean"/>
     </setting>
 
+    <setting propertyKey="@Properties.ShowExtraZone" title="@Strings.SettExtraZone" prompt="@Strings.SettExtraZonePrompt">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ExtraZoneLabel" title="@Strings.SettExtraZoneLabel" prompt="@Strings.SettExtraZoneLabelPrompt">
+        <settingConfig type="alphaNumeric" maxLength="6"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ExtraZoneOffset" title="@Strings.SettExtraZoneOffset" prompt="@Strings.SettExtraZoneOffsetPrompt">
+        <settingConfig type="numeric" min="-12" max="14"/>
+    </setting>
+
     <setting propertyKey="@Properties.LeftField" title="@Strings.SettLeftField">
         <settingConfig type="list">
             <listEntry value="0">@Strings.FieldOff</listEntry>

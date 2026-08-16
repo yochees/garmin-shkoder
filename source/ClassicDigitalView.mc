@@ -28,12 +28,17 @@ const MAX_TIME_W = 264;     // step the font down if the time is wider than this
 // Set TIME_VECTOR to false to go back to the bitmap FONT_NUMBER_THAI_HOT.
 const TIME_VECTOR = true;
 const TIME_FACE = "BionicSemiBold";
-const TIME_SIZE = 136;      // requested pixel height; shrinks to fit if needed
+const TIME_SIZE = 148;      // requested pixel height; shrinks to fit if needed
 const TRIM_ONE = 0.28;      // fraction of the "1" cell to claw back (see below)
 
 const FIELD_Y = 208;        // vertical centre of the complication row
 const FIELD_GAP = 10;       // padding either side of the "|" separator
 const FIELD_COLOR = Graphics.COLOR_LT_GRAY;
+
+// Optional second time zone, drawn in the complication row's font and colour.
+// Mirrored about the time block: the complication row sits 68px below TIME_Y,
+// so this sits 68px above it and the two frame the digits evenly.
+const ZONE_Y = 72;          // vertical centre of the extra time zone row
 
 // Complications use the bitmap FONT_TINY (RobotoCondensed-Bold, 26px). The
 // bitmap sizes go 19 (XTINY) / 26 (TINY) / 29 (SMALL) / 33 (MEDIUM). Setting
@@ -86,6 +91,9 @@ class ClassicDigitalView extends WatchUi.WatchFace {
     private var _leadingZero as Boolean = true;
     private var _leftField as Number = FIELD_DATE;
     private var _rightField as Number = FIELD_STEPS;
+    private var _showExtraZone as Boolean = false;
+    private var _extraZoneOffset as Number = 0;   // seconds ahead of UTC
+    private var _extraZoneLabel as String = "";
 
     public function initialize() {
         WatchFace.initialize();
@@ -169,6 +177,45 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         _leadingZero = boolSetting("LeadingZero", true);
         _leftField = numberSetting("LeftField", FIELD_DATE);
         _rightField = numberSetting("RightField", FIELD_STEPS);
+
+        _showExtraZone = boolSetting("ShowExtraZone", false);
+
+        // Hours from UTC, clamped to the real range and snapped to the quarter
+        // hour so that 5.5 (India) and 5.75 (Nepal) land exactly.
+        var hours = floatSetting("ExtraZoneOffset", 0.0);
+        if (hours < -12.0) {
+            hours = -12.0;
+        } else if (hours > 14.0) {
+            hours = 14.0;
+        }
+        _extraZoneOffset = Math.round(hours * 4.0).toNumber() * 900;
+
+        _extraZoneLabel = stringSetting("ExtraZoneLabel", "");
+    }
+
+    //! Settings editors hand a numeric property back as a Number, a Float or a
+    //! Double depending on what was typed, so accept any of them.
+    private function floatSetting(key as String, fallback as Float) as Float {
+        try {
+            var v = Application.Properties.getValue(key);
+            if (v instanceof Lang.Number || v instanceof Lang.Float ||
+                v instanceof Lang.Long || v instanceof Lang.Double) {
+                return v.toFloat();
+            }
+        } catch (e) {
+        }
+        return fallback;
+    }
+
+    private function stringSetting(key as String, fallback as String) as String {
+        try {
+            var v = Application.Properties.getValue(key);
+            if (v instanceof Lang.String) {
+                return v;
+            }
+        } catch (e) {
+        }
+        return fallback;
     }
 
     private function numberSetting(key as String, fallback as Number) as Number {
@@ -211,6 +258,9 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         target.clear();
         drawTime(target);
         drawFields(target);
+        if (_showExtraZone) {
+            drawExtraZone(target);
+        }
 
         if (buf != null) {
             dc.drawBitmap(0, 0, buf);
@@ -259,6 +309,31 @@ class ClassicDigitalView extends WatchUi.WatchFace {
     private function glyphAt(s as String, i as Number) as String {
         var g = s.substring(i, i + 1);
         return (g == null) ? "" : g;
+    }
+
+    // -----------------------------------------------------------------------
+    // Extra time zone row - above the time, mirroring the complication row
+    // -----------------------------------------------------------------------
+
+    //! Unlike the big time this one keeps its colon: at complication size four
+    //! bare digits are hard to read, and the main time has no colon to clash
+    //! with. 24 hour throughout, like drawTime().
+    private function drawExtraZone(dc as Dc) as Void {
+        // The zone's wall clock is UTC shifted by a fixed offset, so read the
+        // shifted moment back as UTC rather than as device local time.
+        var moment = Time.now().add(new Time.Duration(_extraZoneOffset));
+        var t = Gregorian.utcInfo(moment, Time.FORMAT_SHORT);
+
+        var text = t.hour.format("%02d") + ":" + t.min.format("%02d");
+        if (!_extraZoneLabel.equals("")) {
+            text = _extraZoneLabel + " " + text;
+        }
+
+        dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            _cx, ZONE_Y, _fieldFont, text,
+            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
+        );
     }
 
     // -----------------------------------------------------------------------
