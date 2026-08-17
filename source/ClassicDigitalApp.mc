@@ -28,6 +28,14 @@ class ClassicDigitalApp extends Application.AppBase {
         return [view];
     }
 
+    //! Settings menu shown on the watch itself. Without this the face's
+    //! settings are unreachable when it is sideloaded, because a sideloaded
+    //! app never shows up in the Connect IQ phone app.
+    public function getSettingsView() as [Views] or [Views, InputDelegates] or Null {
+        var menu = new $.SettingsMenu();
+        return [menu, new $.SettingsMenuDelegate(menu)];
+    }
+
     public function onSettingsChanged() as Void {
         var view = _view;
         if (view != null) {

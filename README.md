@@ -15,12 +15,22 @@ tactix 8 Solar 51mm** (280x280, MIP).
 
 ## Settings
 
-From Connect IQ Store app -> the face -> Settings, or Garmin Express:
+**On the watch:** hold `MENU` on the face, or Appearance -> Watch Face ->
+Digital Classic -> Settings.
+
+This face is sideloaded - copied straight into `GARMIN/APPS` rather than
+installed from the store - and a sideloaded app never appears in the Connect
+IQ phone app, because that list is built from the Garmin account's
+installed-app records and there is no record for it. The phone settings screen
+is therefore unreachable, so `ClassicDigitalApp.getSettingsView()` provides the
+menu on the device itself. `source/ClassicDigitalSettings.mc` holds it.
 
 - **Leading zero on hour**
 - **Show extra time zone** - the row above the time
-- **Extra zone label** - up to six characters, e.g. `HOME`, `LON`, `NY`
-- **Extra zone offset from UTC** - hours, halves and quarters allowed
+- **Extra zone label** - up to six characters, e.g. `HOME`, `LON`, `NY`.
+  Typed on the watch with `TextPicker`; devices without one get a preset list
+- **Extra zone offset from UTC** - a two column picker, hours and quarter
+  hours, so `+05:45` (Nepal) and `-03:30` (Newfoundland) are reachable
 - **Left field** / **Right field** - off / date / steps / battery / calories /
   distance / notifications
 
