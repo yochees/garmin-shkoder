@@ -18,6 +18,9 @@ import Toybox.WatchUi;
 //! -3:30 Newfoundland, +12:45 Chatham.
 const OFFSET_STEPS = [0, 15, 30, 45];
 
+//! TopField default, meaning "not chosen yet" - see topFieldProp().
+const TOP_FIELD_UNSET = -1;
+
 //! getSettingsView() must hand back a plain View, not a Menu2.
 //!
 //! Returning a Menu2 straight from getSettingsView() builds and runs in the
@@ -99,21 +102,9 @@ class SettingsMenu extends WatchUi.Menu2 {
     public function initialize() {
         Menu2.initialize({:title => WatchUi.loadResource(Rez.Strings.AppName) as String});
 
-        addItem(new WatchUi.ToggleMenuItem(
-            WatchUi.loadResource(Rez.Strings.SettExtraZone) as String, null,
-            :ShowExtraZone, boolProp("ShowExtraZone", false), {}));
-
         addItem(new WatchUi.MenuItem(
-            WatchUi.loadResource(Rez.Strings.SettExtraZoneLabel) as String,
-            labelText(), :ExtraZoneLabel, {}));
-
-        addItem(new WatchUi.MenuItem(
-            WatchUi.loadResource(Rez.Strings.SettExtraZoneOffset) as String,
-            offsetText(), :ExtraZoneOffset, {}));
-
-        addItem(new WatchUi.ToggleMenuItem(
-            WatchUi.loadResource(Rez.Strings.SettLeadingZero) as String, null,
-            :LeadingZero, boolProp("LeadingZero", true), {}));
+            WatchUi.loadResource(Rez.Strings.SettTopField) as String,
+            topFieldText(), :TopField, {}));
 
         addItem(new WatchUi.MenuItem(
             WatchUi.loadResource(Rez.Strings.SettLeftField) as String,
@@ -122,6 +113,18 @@ class SettingsMenu extends WatchUi.Menu2 {
         addItem(new WatchUi.MenuItem(
             WatchUi.loadResource(Rez.Strings.SettRightField) as String,
             fieldText("RightField", 2), :RightField, {}));
+
+        addItem(new WatchUi.ToggleMenuItem(
+            WatchUi.loadResource(Rez.Strings.SettLeadingZero) as String, null,
+            :LeadingZero, boolProp("LeadingZero", true), {}));
+
+        addItem(new WatchUi.MenuItem(
+            WatchUi.loadResource(Rez.Strings.SettExtraZoneLabel) as String,
+            labelText(), :ExtraZoneLabel, {}));
+
+        addItem(new WatchUi.MenuItem(
+            WatchUi.loadResource(Rez.Strings.SettExtraZoneOffset) as String,
+            offsetText(), :ExtraZoneOffset, {}));
     }
 
     //! Re-read one row's sub-label after its picker or submenu has written it.
@@ -139,6 +142,8 @@ class SettingsMenu extends WatchUi.Menu2 {
             item.setSubLabel(labelText());
         } else if (id == :ExtraZoneOffset) {
             item.setSubLabel(offsetText());
+        } else if (id == :TopField) {
+            item.setSubLabel(topFieldText());
         } else if (id == :LeftField) {
             item.setSubLabel(fieldText("LeftField", 1));
         } else if (id == :RightField) {
@@ -169,13 +174,8 @@ class SettingsMenuDelegate extends WatchUi.Menu2InputDelegate {
     public function onSelect(item as WatchUi.MenuItem) as Void {
         var id = item.getId();
 
-        if (id == :ShowExtraZone) {
-            // The toggle has already flipped itself; just persist it.
-            saveProp("ShowExtraZone", (item as WatchUi.ToggleMenuItem).isEnabled());
-            return;
-        }
-
         if (id == :LeadingZero) {
+            // The toggle has already flipped itself; just persist it.
             saveProp("LeadingZero", (item as WatchUi.ToggleMenuItem).isEnabled());
             return;
         }
@@ -190,10 +190,19 @@ class SettingsMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        if (id == :LeftField || id == :RightField) {
-            var key = (id == :LeftField) ? "LeftField" : "RightField";
+        if (id == :TopField || id == :LeftField || id == :RightField) {
+            var key = "RightField";
+            var current = numberProp(key, 2);
+            if (id == :TopField) {
+                key = "TopField";
+                current = topFieldProp();
+            } else if (id == :LeftField) {
+                key = "LeftField";
+                current = numberProp(key, 1);
+            }
+
             WatchUi.pushView(
-                new $.ChoiceMenu(item.getLabel(), fieldChoices(), numberProp(key, 1)),
+                new $.ChoiceMenu(item.getLabel(), fieldChoices(), current),
                 new $.ChoiceDelegate(_menu, id as Symbol, key),
                 WatchUi.SLIDE_LEFT);
         }
@@ -245,22 +254,67 @@ class ChoiceDelegate extends WatchUi.Menu2InputDelegate {
 // Label - free text where the device allows it, presets where it does not
 // ---------------------------------------------------------------------------
 
+//! A list, not the TextPicker straight away.
+//!
+//! TextPicker greys out its save button on an empty field, so once a label
+//! existed there was no way back to none - the only escape was typing a space
+//! and knowing that it gets trimmed, which nobody should have to guess. The
+//! list carries an explicit "(none)" row, and "Type..." for anything not in
+//! the presets.
+const LABEL_TYPE_ID = -1;
+
 function pushLabelEditor(root as SettingsMenu) as Void {
-    if (WatchUi has :TextPicker) {
-        WatchUi.pushView(
-            new WatchUi.TextPicker(stringProp("ExtraZoneLabel", "")),
-            new $.LabelPickerDelegate(root),
-            WatchUi.SLIDE_LEFT);
-        return;
+    WatchUi.pushView(
+        new $.LabelMenu(stringProp("ExtraZoneLabel", "")),
+        new $.LabelMenuDelegate(root),
+        WatchUi.SLIDE_LEFT);
+}
+
+class LabelMenu extends WatchUi.Menu2 {
+
+    public function initialize(current as String) {
+        Menu2.initialize({
+            :title => WatchUi.loadResource(Rez.Strings.SettExtraZoneLabel) as String
+        });
+
+        var choices = labelChoices();
+        for (var i = 0; i < choices.size(); i++) {
+            var c = choices[i] as Array;
+            var mark = (c[0] as String).equals(current) ? "> " : "";
+            addItem(new WatchUi.MenuItem(mark + (c[1] as String), null, i, {}));
+        }
+
+        if (WatchUi has :TextPicker) {
+            addItem(new WatchUi.MenuItem("Type...", null, LABEL_TYPE_ID, {}));
+        }
+    }
+}
+
+class LabelMenuDelegate extends WatchUi.Menu2InputDelegate {
+
+    private var _root as SettingsMenu;
+
+    public function initialize(root as SettingsMenu) {
+        Menu2InputDelegate.initialize();
+        _root = root;
     }
 
-    WatchUi.pushView(
-        new $.ChoiceMenu(
-            WatchUi.loadResource(Rez.Strings.SettExtraZoneLabel) as String,
-            labelChoices(),
-            stringProp("ExtraZoneLabel", "")),
-        new $.ChoiceDelegate(root, :ExtraZoneLabel, "ExtraZoneLabel"),
-        WatchUi.SLIDE_LEFT);
+    public function onSelect(item as WatchUi.MenuItem) as Void {
+        var id = item.getId() as Number;
+
+        if (id == LABEL_TYPE_ID) {
+            WatchUi.pushView(
+                new WatchUi.TextPicker(stringProp("ExtraZoneLabel", "")),
+                new $.LabelPickerDelegate(_root),
+                WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        var choice = labelChoices()[id] as Array;
+        saveProp("ExtraZoneLabel", choice[0]);
+        _root.refresh(:ExtraZoneLabel);
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
+    }
 }
 
 class LabelPickerDelegate extends WatchUi.TextPickerDelegate {
@@ -490,8 +544,24 @@ function fieldChoices() as Array {
         [3, WatchUi.loadResource(Rez.Strings.FieldBattery) as String],
         [4, WatchUi.loadResource(Rez.Strings.FieldCalories) as String],
         [5, WatchUi.loadResource(Rez.Strings.FieldDistance) as String],
-        [6, WatchUi.loadResource(Rez.Strings.FieldNotifications) as String]
+        [6, WatchUi.loadResource(Rez.Strings.FieldNotifications) as String],
+        [7, WatchUi.loadResource(Rez.Strings.FieldZone) as String]
     ];
+}
+
+//! The top row used to be a ShowExtraZone toggle rather than a field, so
+//! TopField ships with a sentinel default of -1 meaning "never set". Read it
+//! through here: the first read converts the old toggle and writes the answer
+//! back, after which the sentinel is gone for good.
+function topFieldProp() as Number {
+    var v = numberProp("TopField", TOP_FIELD_UNSET);
+    if (v != TOP_FIELD_UNSET) {
+        return v;
+    }
+
+    var migrated = boolProp("ShowExtraZone", false) ? 7 : 0;
+    Application.Properties.setValue("TopField", migrated);
+    return migrated;
 }
 
 function labelChoices() as Array {
@@ -502,11 +572,18 @@ function labelChoices() as Array {
 }
 
 function fieldText(key as String, fallback as Number) as String {
-    var v = numberProp(key, fallback);
+    return fieldName(numberProp(key, fallback));
+}
+
+function topFieldText() as String {
+    return fieldName(topFieldProp());
+}
+
+function fieldName(value as Number) as String {
     var choices = fieldChoices();
     for (var i = 0; i < choices.size(); i++) {
         var c = choices[i] as Array;
-        if ((c[0] as Number) == v) {
+        if ((c[0] as Number) == value) {
             return c[1] as String;
         }
     }

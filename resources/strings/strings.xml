@@ -1,15 +1,13 @@
 <strings>
     <string id="AppName">Fenix 5X</string>
     <string id="SettLeadingZero">Leading zero on hour</string>
-    <string id="SettExtraZone">Show extra time zone</string>
-    <string id="SettExtraZonePrompt">A dim row above the time, in the same style as the complication row.</string>
-
-    <string id="SettExtraZoneLabel">Extra zone label</string>
+    <string id="SettExtraZoneLabel">Time zone label</string>
     <string id="SettExtraZoneLabelPrompt">Up to six characters, for example HOME, LON or NY. Leave empty for no label.</string>
 
-    <string id="SettExtraZoneOffset">Extra zone offset from UTC</string>
+    <string id="SettExtraZoneOffset">Time zone offset from UTC</string>
     <string id="SettExtraZoneOffsetPrompt">Hours ahead of UTC, halves and quarters allowed: 2 = Vilnius in winter, 3 = Vilnius in summer, -5 = New York in winter, 5.5 = India. This is a fixed offset - change it when that zone changes to or from summer time.</string>
 
+    <string id="SettTopField">Top field</string>
     <string id="SettLeftField">Left field</string>
     <string id="SettRightField">Right field</string>
 
@@ -20,4 +18,5 @@
     <string id="FieldCalories">Calories</string>
     <string id="FieldDistance">Distance</string>
     <string id="FieldNotifications">Notifications</string>
+    <string id="FieldZone">Time zone</string>
 </strings>

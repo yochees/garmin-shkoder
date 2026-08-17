@@ -31,14 +31,21 @@ const TIME_FACE = "BionicSemiBold";
 const TIME_SIZE = 148;      // requested pixel height; shrinks to fit if needed
 const TRIM_ONE = 0.28;      // fraction of the "1" cell to claw back (see below)
 
-const FIELD_Y = 208;        // vertical centre of the complication row
+// The two rows are mirrored about the digits, but not about TIME_Y: VCENTER
+// centres the font's whole box, and the digits use none of the descender space
+// at the bottom of it, so their ink sits ~4px higher than the value asked for.
+// Measured on device at TIME_SIZE 148, the ink runs 99..174 - centre 136. Both
+// rows hang off that instead, which is what makes the two gaps come out equal.
+const TIME_INK_Y = 137;     // optical centre of the digit ink
+const ROW_GAP = 68;         // ink centre to the centre of each row
+
+const FIELD_Y = TIME_INK_Y + ROW_GAP;   // complication row, below the time
 const FIELD_GAP = 10;       // padding either side of the "|" separator
 const FIELD_COLOR = Graphics.COLOR_LT_GRAY;
 
-// Optional second time zone, drawn in the complication row's font and colour.
-// Mirrored about the time block: the complication row sits 68px below TIME_Y,
-// so this sits 68px above it and the two frame the digits evenly.
-const ZONE_Y = 72;          // vertical centre of the extra time zone row
+// Single complication above the time, in the same font and colour as the row
+// below it. Any of the field types, including the extra time zone.
+const TOP_Y = TIME_INK_Y - ROW_GAP;     // top field row, above the time
 
 // Complications use the bitmap FONT_TINY (RobotoCondensed-Bold, 26px). The
 // bitmap sizes go 19 (XTINY) / 26 (TINY) / 29 (SMALL) / 33 (MEDIUM). Setting
@@ -62,7 +69,8 @@ enum FieldType {
     FIELD_BATTERY = 3,
     FIELD_CALORIES = 4,
     FIELD_DISTANCE = 5,
-    FIELD_NOTIFICATIONS = 6
+    FIELD_NOTIFICATIONS = 6,
+    FIELD_ZONE = 7
 }
 
 //! Big centred time, two minimalist complications below it, and a single
@@ -89,9 +97,9 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
     // Settings
     private var _leadingZero as Boolean = true;
+    private var _topField as Number = FIELD_OFF;
     private var _leftField as Number = FIELD_DATE;
     private var _rightField as Number = FIELD_STEPS;
-    private var _showExtraZone as Boolean = false;
     private var _extraZoneOffset as Number = 0;   // seconds ahead of UTC
     private var _extraZoneLabel as String = "";
 
@@ -175,10 +183,9 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
     public function loadSettings() as Void {
         _leadingZero = boolSetting("LeadingZero", true);
+        _topField = $.topFieldProp();
         _leftField = numberSetting("LeftField", FIELD_DATE);
         _rightField = numberSetting("RightField", FIELD_STEPS);
-
-        _showExtraZone = boolSetting("ShowExtraZone", false);
 
         // Hours from UTC, clamped to the real range and snapped to the quarter
         // hour so that 5.5 (India) and 5.75 (Nepal) land exactly.
@@ -190,7 +197,9 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         }
         _extraZoneOffset = Math.round(hours * 4.0).toNumber() * 900;
 
-        _extraZoneLabel = stringSetting("ExtraZoneLabel", "");
+        // Trimmed here as well as on the way in, so a label of spaces stored by
+        // an older build cannot shove the row off centre with leading padding.
+        _extraZoneLabel = $.trimSpaces(stringSetting("ExtraZoneLabel", ""));
     }
 
     //! Settings editors hand a numeric property back as a Number, a Float or a
@@ -258,9 +267,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         target.clear();
         drawTime(target);
         drawFields(target);
-        if (_showExtraZone) {
-            drawExtraZone(target);
-        }
+        drawTopField(target);
 
         if (buf != null) {
             dc.drawBitmap(0, 0, buf);
@@ -312,13 +319,28 @@ class ClassicDigitalView extends WatchUi.WatchFace {
     }
 
     // -----------------------------------------------------------------------
-    // Extra time zone row - above the time, mirroring the complication row
+    // Top row - one field above the time, mirroring the complication row
     // -----------------------------------------------------------------------
 
-    //! Unlike the big time this one keeps its colon: at complication size four
-    //! bare digits are hard to read, and the main time has no colon to clash
-    //! with. 24 hour throughout, like drawTime().
-    private function drawExtraZone(dc as Dc) as Void {
+    //! Centred rather than split in two: it is usually the extra time zone,
+    //! which is wide, and a lone value reads better without a separator.
+    private function drawTopField(dc as Dc) as Void {
+        var text = fieldText(_topField);
+        if (text == null) {
+            return;
+        }
+
+        dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            _cx, TOP_Y, _fieldFont, text,
+            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
+        );
+    }
+
+    //! Unlike the big time this keeps its colon: at complication size four bare
+    //! digits are hard to read, and the main time has no colon to clash with.
+    //! 24 hour throughout, like drawTime().
+    private function zoneText() as String {
         // The zone's wall clock is UTC shifted by a fixed offset, so read the
         // shifted moment back as UTC rather than as device local time.
         var moment = Time.now().add(new Time.Duration(_extraZoneOffset));
@@ -328,12 +350,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         if (!_extraZoneLabel.equals("")) {
             text = _extraZoneLabel + " " + text;
         }
-
-        dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(
-            _cx, ZONE_Y, _fieldFont, text,
-            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
-        );
+        return text;
     }
 
     // -----------------------------------------------------------------------
@@ -414,6 +431,10 @@ class ClassicDigitalView extends WatchUi.WatchFace {
             case FIELD_NOTIFICATIONS: {
                 var n = System.getDeviceSettings().notificationCount;
                 return (n == null) ? "0" : n.format("%d");
+            }
+
+            case FIELD_ZONE: {
+                return zoneText();
             }
         }
         return null;

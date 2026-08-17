@@ -9,8 +9,10 @@ tactix 8 Solar 51mm** (280x280, MIP).
 > older name - do not go looking for a second project.
 
 - Large centred time, no colon, with tightened letter spacing
-- Two complications on one row separated by a dim `|` (default: date + steps)
-- An optional second time zone above the time, off by default
+- Two complications on one row below the time, separated by a dim `|`
+  (default: date + steps)
+- A third complication above the time, off by default. It takes the same values
+  as the other two, plus a second time zone
 - A single second marker running around the rim, kept ticking in low-power
   mode via `onPartialUpdate()`
 
@@ -23,14 +25,20 @@ tactix 8 Solar 51mm** (280x280, MIP).
 **On the watch:** apply the face, then press its edit icon -> **Customize**.
 The menu opens straight away.
 
+- **Top field** / **Left field** / **Right field** - off / date / steps /
+  battery / calories / distance / notifications / time zone. Top is the row
+  above the time and is the only one that starts off; left and right share the
+  row below it
 - **Leading zero on hour**
-- **Show extra time zone** - the row above the time
-- **Extra zone label** - up to six characters, e.g. `HOME`, `LON`, `NY`.
-  Typed on the watch with `TextPicker`; devices without one get a preset list
-- **Extra zone offset from UTC** - a two column picker, hours and quarter
+- **Time zone label** - up to six characters, e.g. `HOME`, `LON`, `NY`. Typed
+  on the watch with `TextPicker`, with a preset list and an explicit *(none)*
+  for devices without one
+- **Time zone offset from UTC** - a two column picker, hours and quarter
   hours, so `+05:45` (Nepal) and `-03:30` (Newfoundland) are reachable
-- **Left field** / **Right field** - off / date / steps / battery / calories /
-  distance / notifications
+
+The label and offset apply wherever **Time zone** is chosen, so any of the
+three fields can be the second zone - though the label makes it wide enough
+that the top row is the only comfortable home for it.
 
 ### Why the settings are on the device and not in the phone app
 
@@ -84,10 +92,16 @@ happily opens a `Menu2` returned directly. Only the watch tells the truth.
   Sun 16 | 0
 ```
 
-`ZONE_Y = 72` mirrors `FIELD_Y = 208` about `TIME_Y = 140`, so the zone row
-and the complication row sit the same distance from the digits. The row keeps
-its colon even though the big time has none: four bare digits are unreadable
-at complication size, and there is no colon above to clash with.
+Both rows hang off `TIME_INK_Y`, not `TIME_Y`: `TEXT_JUSTIFY_VCENTER` centres
+the font's whole box, and the digits use none of the descender space at the
+bottom of it, so their ink sits about 4px above the value asked for. Mirroring
+about `TIME_Y` therefore left 18.5px above the digits and 24.5px below.
+Measured on device the ink runs 99..174, so `TIME_INK_Y = 137` with
+`ROW_GAP = 68` puts both rows 21.5px clear.
+
+The zone row keeps its colon even though the big time has none: four bare
+digits are unreadable at complication size, and there is no colon above to
+clash with.
 
 It is a **fixed offset from UTC**, not a named zone, so it does not follow
 summer time on its own - change the offset when that zone switches. Connect IQ

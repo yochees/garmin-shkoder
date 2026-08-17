@@ -1,12 +1,20 @@
 <properties>
     <property id="LeadingZero" type="boolean">true</property>
+
+    <!-- Complications: 0 off, 1 date, 2 steps, 3 battery, 4 calories,
+         5 distance, 6 notifications, 7 extra time zone. TopField starts at -1,
+         which means "not chosen yet" and is migrated from the ShowExtraZone
+         toggle it replaced - see topFieldProp(). -->
+    <property id="TopField" type="number">-1</property>
     <property id="LeftField" type="number">1</property>
     <property id="RightField" type="number">2</property>
 
-    <!-- Extra time zone row above the time. Offset is hours from UTC and takes
-         halves and quarters (5.5 = India, -3.5 = Newfoundland). It is a fixed
-         offset, so it has to be changed by hand when that zone switches DST. -->
+    <!-- Legacy, kept only so the migration above can still read it. -->
     <property id="ShowExtraZone" type="boolean">false</property>
+
+    <!-- Extra time zone. Offset is hours from UTC and takes halves and quarters
+         (5.5 = India, -3.5 = Newfoundland). It is a fixed offset, so it has to
+         be changed by hand when that zone switches DST. -->
     <property id="ExtraZoneOffset" type="float">0.0</property>
     <property id="ExtraZoneLabel" type="string">UTC</property>
 </properties>
