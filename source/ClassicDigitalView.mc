@@ -1,12 +1,15 @@
+import Toybox.Activity;
 import Toybox.ActivityMonitor;
 import Toybox.Application;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
+import Toybox.SensorHistory;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.Time.Gregorian;
 import Toybox.WatchUi;
+import Toybox.Weather;
 
 // ---------------------------------------------------------------------------
 // Layout constants. Everything that controls the look lives here - tune these
@@ -45,12 +48,23 @@ const FIELD_COLOR = Graphics.COLOR_LT_GRAY;
 
 // Single complication above the time, in the same font and colour as the row
 // below it. Any of the field types, including the extra time zone.
-const TOP_Y = TIME_INK_Y - ROW_GAP;     // top field row, above the time
+//
+// TOP_LIFT breaks the mirror on purpose: the row below carries the date, which
+// is wider and heavier, so hanging the top row at the same distance makes it
+// look low. Lifting it a few pixels evens out what the eye sees rather than
+// what the ruler says. Set it to 0 for a true mirror.
+const TOP_LIFT = 0;
+const TOP_Y = TIME_INK_Y - ROW_GAP - TOP_LIFT;  // top field row, above the time
 
-// Complications use the bitmap FONT_TINY (RobotoCondensed-Bold, 26px). The
-// bitmap sizes go 19 (XTINY) / 26 (TINY) / 29 (SMALL) / 33 (MEDIUM). Setting
-// FIELD_VECTOR to true instead gets any size in between, but the only Bionic
-// bitmap near this size is FONT_NUMBER_MILD at 48px, far too big.
+// Complications use the same vector face as the clock, so the whole face is
+// one family. The alternative is the bitmap FONT_TINY (RobotoCondensed-Bold,
+// 26px, sizes 19 XTINY / 26 TINY / 29 SMALL / 33 MEDIUM) - crisper, being
+// hand-tuned rather than rasterised, but a different family; set FIELD_VECTOR
+// to false for it. There is no Bionic bitmap at this size: the nearest is
+// FONT_NUMBER_MILD at 48px, far too big, and it carries no letters.
+//
+// FIELD_SIZE is em, not cap height: 37 measures the same 18.5px of digit ink
+// as FONT_TINY did, and 32 - what this uses - about 16px.
 const FIELD_VECTOR = false;
 const FIELD_FACE = "BionicSemiBold";
 const FIELD_SIZE = 25;
@@ -70,7 +84,12 @@ enum FieldType {
     FIELD_CALORIES = 4,
     FIELD_DISTANCE = 5,
     FIELD_NOTIFICATIONS = 6,
-    FIELD_ZONE = 7
+    FIELD_ZONE = 7,
+    FIELD_HR = 8,
+    FIELD_SOLAR = 9,
+    FIELD_PRESSURE = 10,
+    FIELD_TEMP = 11,
+    FIELD_WATCH_TEMP = 12
 }
 
 //! Big centred time, two minimalist complications below it, and a single
@@ -436,8 +455,99 @@ class ClassicDigitalView extends WatchUi.WatchFace {
             case FIELD_ZONE: {
                 return zoneText();
             }
+
+            //! Activity first: in a watch face it carries the last reading the
+            //! optical sensor took, which in low-power mode is a minute old at
+            //! worst. The history is only there for the gap right after a
+            //! reload, when Activity has nothing yet.
+            case FIELD_HR: {
+                var hr = null;
+                var act = Activity.getActivityInfo();
+                if (act != null) {
+                    hr = act.currentHeartRate;
+                }
+                if (hr == null && (ActivityMonitor has :getHeartRateHistory)) {
+                    var it = ActivityMonitor.getHeartRateHistory(1, true);
+                    var s = (it == null) ? null : it.next();
+                    if (s != null && s.heartRate != ActivityMonitor.INVALID_HR_SAMPLE) {
+                        hr = s.heartRate;
+                    }
+                }
+                return (hr == null) ? "--" : hr.format("%d");
+            }
+
+            //! Percent, not the lux hours the solar glance shows - Connect IQ
+            //! exposes only this instantaneous figure, so the two will not
+            //! agree and are not meant to.
+            case FIELD_SOLAR: {
+                var stats = System.getSystemStats();
+                if (!(stats has :solarIntensity)) {
+                    return "--";
+                }
+                var si = stats.solarIntensity;
+                return (si == null) ? "--" : si.format("%d") + "%";
+            }
+
+            case FIELD_PRESSURE: {
+                var pa = null;
+                var act = Activity.getActivityInfo();
+                if (act != null && (act has :ambientPressure)) {
+                    pa = act.ambientPressure;
+                }
+                if (pa == null) {
+                    pa = newestSample(:getPressureHistory);
+                }
+                // Pascals in, millibars out - the unit every altimeter watch
+                // states pressure in.
+                return (pa == null) ? "--" : (pa / 100.0).format("%.0f") + "mb";
+            }
+
+            case FIELD_TEMP: {
+                if (!(Toybox has :Weather)) {
+                    return "--";
+                }
+                var cc = Weather.getCurrentConditions();
+                if (cc == null || cc.temperature == null) {
+                    return "--";
+                }
+                return tempText(cc.temperature);
+            }
+
+            case FIELD_WATCH_TEMP: {
+                var c = newestSample(:getTemperatureHistory);
+                return (c == null) ? "--" : tempText(c);
+            }
         }
         return null;
+    }
+
+    //! Newest reading from one of the SensorHistory series, or null if the
+    //! device has no such sensor and on the older firmware that has no
+    //! SensorHistory at all.
+    private function newestSample(which as Symbol) as Numeric? {
+        if (!(Toybox has :SensorHistory) || !(SensorHistory has which)) {
+            return null;
+        }
+
+        var it = (which == :getPressureHistory)
+            ? SensorHistory.getPressureHistory({})
+            : SensorHistory.getTemperatureHistory({});
+
+        // Empty on a watch that has not logged a sample yet - a fresh reboot,
+        // or a series the device does not keep at all.
+        var s = it.next();
+        return (s == null) ? null : s.data;
+    }
+
+    //! Celsius in - both sources report it - converted to whatever the watch
+    //! is set to. Rounded rather than truncated, so -0.4 does not read as 0
+    //! while -0.6 reads as -1.
+    private function tempText(celsius as Numeric) as String {
+        var v = celsius;
+        if (System.getDeviceSettings().temperatureUnits == System.UNIT_STATUTE) {
+            v = celsius * 9.0 / 5.0 + 32.0;
+        }
+        return Math.round(v).toNumber().format("%d") + "°";
     }
 
     // -----------------------------------------------------------------------

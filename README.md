@@ -26,9 +26,9 @@ tactix 8 Solar 51mm** (280x280, MIP).
 The menu opens straight away.
 
 - **Top field** / **Left field** / **Right field** - off / date / steps /
-  battery / calories / distance / notifications / time zone. Top is the row
-  above the time and is the only one that starts off; left and right share the
-  row below it
+  battery / calories / distance / notifications / time zone / HR / solar /
+  barometer / temperature / watch temp. Top is the row above the time and is
+  the only one that starts off; left and right share the row below it
 - **Leading zero on hour**
 - **Time zone label** - up to six characters, e.g. `HOME`, `LON`, `NY`. Typed
   on the watch with `TextPicker`, with a preset list and an explicit *(none)*

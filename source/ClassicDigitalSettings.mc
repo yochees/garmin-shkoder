@@ -545,7 +545,12 @@ function fieldChoices() as Array {
         [4, WatchUi.loadResource(Rez.Strings.FieldCalories) as String],
         [5, WatchUi.loadResource(Rez.Strings.FieldDistance) as String],
         [6, WatchUi.loadResource(Rez.Strings.FieldNotifications) as String],
-        [7, WatchUi.loadResource(Rez.Strings.FieldZone) as String]
+        [7, WatchUi.loadResource(Rez.Strings.FieldZone) as String],
+        [8, WatchUi.loadResource(Rez.Strings.FieldHr) as String],
+        [9, WatchUi.loadResource(Rez.Strings.FieldSolar) as String],
+        [10, WatchUi.loadResource(Rez.Strings.FieldPressure) as String],
+        [11, WatchUi.loadResource(Rez.Strings.FieldTemp) as String],
+        [12, WatchUi.loadResource(Rez.Strings.FieldWatchTemp) as String]
     ];
 }
 

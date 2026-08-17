@@ -19,4 +19,9 @@
     <string id="FieldDistance">Distance</string>
     <string id="FieldNotifications">Notifications</string>
     <string id="FieldZone">Time zone</string>
+    <string id="FieldHr">HR</string>
+    <string id="FieldSolar">Solar</string>
+    <string id="FieldPressure">Barometer</string>
+    <string id="FieldTemp">Temperature</string>
+    <string id="FieldWatchTemp">Watch temp</string>
 </strings>
