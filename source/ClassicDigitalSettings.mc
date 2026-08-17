@@ -272,14 +272,34 @@ class LabelPickerDelegate extends WatchUi.TextPickerDelegate {
         _root = root;
     }
 
+    //! Spaces are stripped, so a label of nothing but spaces clears it. That is
+    //! the only way to end up with no label: the TextPicker will not confirm an
+    //! empty string, so "type a space" is the escape hatch.
     public function onTextEntered(text as String, changed as Boolean) as Boolean {
+        var label = trimSpaces(text);
+
         // The row is drawn beside the time in the complication font, so a long
         // label would push it wider than the face.
-        var trimmed = (text.length() > 6) ? text.substring(0, 6) as String : text;
-        saveProp("ExtraZoneLabel", trimmed);
+        if (label.length() > 6) {
+            label = label.substring(0, 6) as String;
+        }
+
+        saveProp("ExtraZoneLabel", label);
         _root.refresh(:ExtraZoneLabel);
         return true;
     }
+}
+
+function trimSpaces(s as String) as String {
+    var start = 0;
+    var end = s.length();
+    while (start < end && (s.substring(start, start + 1) as String).equals(" ")) {
+        start += 1;
+    }
+    while (end > start && (s.substring(end - 1, end) as String).equals(" ")) {
+        end -= 1;
+    }
+    return s.substring(start, end) as String;
 }
 
 // ---------------------------------------------------------------------------
@@ -450,7 +470,7 @@ function stringProp(key as String, fallback as String) as String {
 
 function labelText() as String {
     var s = stringProp("ExtraZoneLabel", "");
-    return s.equals("") ? "-" : s;
+    return s.equals("") ? "(none)" : s;
 }
 
 //! "UTC+05:30" - the same shape the offset is typed in as.
@@ -476,7 +496,7 @@ function fieldChoices() as Array {
 
 function labelChoices() as Array {
     return [
-        ["", "-"], ["UTC", "UTC"], ["HOME", "HOME"], ["LON", "LON"],
+        ["", "(none)"], ["UTC", "UTC"], ["HOME", "HOME"], ["LON", "LON"],
         ["NY", "NY"], ["LA", "LA"], ["TOK", "TOK"], ["SYD", "SYD"]
     ];
 }
