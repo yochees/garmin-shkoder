@@ -1,7 +1,7 @@
 # Fenix 5X - Connect IQ watch face
 
 This directory **is** the repo. One project, one canonical checkout, remote at
-`github.com/yochees/fenix8-digital-classic` (private).
+`github.com/yochees/fenix5x-watchface` (private).
 
 A rebuild of the fenix 5 Plus stock digital face for Algis's **fenix 8 Solar
 51mm** (`fenix8solar51mm`, 280x280 MIP). It is the face he actually wears, and
@@ -14,17 +14,18 @@ That single fact drives most of what follows.
 | --- | --- |
 | name on the watch | **Fenix 5X** |
 | file pushed | `Fenix5X.prg` |
-| repo + GitHub remote | `fenix8-digital-classic` |
+| local checkout | `~/Code/garmin` |
+| GitHub remote | `fenix5x-watchface` |
 | source files and classes | `ClassicDigital*` |
 
-It was called *Digital Classic* until 2026-08-17. Only the display name and
-the `.prg` were renamed; the repo and the code were not. There is no second
-project - if a task mentions any of these names, it is this one.
+It was called *Digital Classic* until 2026-08-17. The display name, the `.prg`
+and the GitHub repo were renamed; the source files and classes were not. There
+is no second project - if a task mentions any of these names, it is this one.
 
 `~/Code/garmin` used to hold two faces. The other one, `fenix5x-face` (a fenix
-**5X** replica, never installed on the watch), was deleted on 2026-08-17 and
-sits in `~/.Trash` - it had three commits and **no remote**, so that is the
-only copy.
+**5X** replica of the 5X stock face, never installed on the watch), was deleted
+on 2026-08-17 and the Trash emptied. It is gone - it had three commits and no
+remote. Do not go looking for it; this project is the only watch face now.
 
 ## Read the README before touching settings
 
