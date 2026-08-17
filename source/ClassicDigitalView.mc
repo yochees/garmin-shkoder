@@ -53,7 +53,7 @@ const FIELD_COLOR = Graphics.COLOR_LT_GRAY;
 // is wider and heavier, so hanging the top row at the same distance makes it
 // look low. Lifting it a few pixels evens out what the eye sees rather than
 // what the ruler says. Set it to 0 for a true mirror.
-const TOP_LIFT = 0;
+const TOP_LIFT = 4;
 const TOP_Y = TIME_INK_Y - ROW_GAP - TOP_LIFT;  // top field row, above the time
 
 // Complications use the same vector face as the clock, so the whole face is
@@ -65,9 +65,9 @@ const TOP_Y = TIME_INK_Y - ROW_GAP - TOP_LIFT;  // top field row, above the time
 //
 // FIELD_SIZE is em, not cap height: 37 measures the same 18.5px of digit ink
 // as FONT_TINY did, and 32 - what this uses - about 16px.
-const FIELD_VECTOR = false;
+const FIELD_VECTOR = true;
 const FIELD_FACE = "BionicSemiBold";
-const FIELD_SIZE = 25;
+const FIELD_SIZE = 32;
 
 const MARK_RADIUS = 133;    // radius of the marker centre
 const MARK_W = 3;           // tangential width
