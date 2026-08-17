@@ -1,7 +1,12 @@
-# Digital Classic
+# Fenix 5X
 
 A rebuild of the fenix 5 Plus stock digital watch face for the **fenix 8 Solar /
 tactix 8 Solar 51mm** (280x280, MIP).
+
+> **Naming.** The face is called **Fenix 5X** on the watch and ships as
+> `Fenix5X.prg`. It was called *Digital Classic* until 2026-08-17, so the repo,
+> the source files and the classes are all still `ClassicDigital*`. Same thing,
+> older name - do not go looking for a second project.
 
 - Large centred time, no colon, with tightened letter spacing
 - Two complications on one row separated by a dim `|` (default: date + steps)
@@ -15,15 +20,8 @@ tactix 8 Solar 51mm** (280x280, MIP).
 
 ## Settings
 
-**On the watch:** hold `MENU` on the face, or Appearance -> Watch Face ->
-Digital Classic -> Settings.
-
-This face is sideloaded - copied straight into `GARMIN/APPS` rather than
-installed from the store - and a sideloaded app never appears in the Connect
-IQ phone app, because that list is built from the Garmin account's
-installed-app records and there is no record for it. The phone settings screen
-is therefore unreachable, so `ClassicDigitalApp.getSettingsView()` provides the
-menu on the device itself. `source/ClassicDigitalSettings.mc` holds it.
+**On the watch:** apply the face, then press its edit icon -> **Customize**.
+The menu opens straight away.
 
 - **Leading zero on hour**
 - **Show extra time zone** - the row above the time
@@ -33,6 +31,50 @@ menu on the device itself. `source/ClassicDigitalSettings.mc` holds it.
   hours, so `+05:45` (Nepal) and `-03:30` (Newfoundland) are reachable
 - **Left field** / **Right field** - off / date / steps / battery / calories /
   distance / notifications
+
+### Why the settings are on the device and not in the phone app
+
+This face is **sideloaded** - the `.prg` is copied into `GARMIN/APPS` over MTP
+rather than installed from the Connect IQ store. That rules out both official
+settings routes, permanently:
+
+- **Connect IQ phone app** - lists apps from the Garmin *account's*
+  installed-app records. A sideloaded app has no record, so the face never
+  appears at all.
+- **Garmin Express** - reads the *device*, so it does list the face, but it
+  fetches the settings *schema* by app id from the store. No store entry means
+  no schema, so its Settings option is greyed out.
+
+So XML app settings (`resources/settings/settings.xml`) can never work here,
+and that file has been removed. `AppBase.getSettingsView()` in
+`source/ClassicDigitalApp.mc` provides the menu instead, built in
+`source/ClassicDigitalSettings.mc`.
+
+### Three things that stop getSettingsView() working, all learned the hard way
+
+Verified on the watch by building Garmin's own `Analog` sample for it and
+comparing behaviour. Change any of these back and the settings become
+unreachable again:
+
+1. **Return a plain `View`, never a `Menu2`.** Returning a `Menu2` straight
+   from `getSettingsView()` compiles, and works in the simulator, but the watch
+   then offers **no Customize entry at all**. The `Analog` sample returns a
+   `View` whose delegate opens the menu; that is the shape the firmware
+   accepts.
+2. **A changed app needs a new app id.** The watch caches per-app metadata
+   keyed by the manifest `id`, including whether the app has settings. The id
+   was first installed before this face had a settings view, and no amount of
+   reinstalling or **rebooting** cleared that - Customize only appeared after
+   the id was regenerated. If settings stop showing after a big change, mint a
+   fresh id.
+3. **Do not wait for `MENU`.** `Analog` shows a "Press MENU for settings" hint,
+   which is dead on a fenix 8 - MENU is a long press of UP and never reaches
+   `onMenu()` inside a settings view. `SettingsLauncherView.onShow()` opens the
+   menu itself, guarded by a flag so that backing out does not loop straight
+   back in. START, ENTER, MENU and DOWN are wired as fallbacks.
+
+The simulator will not catch any of this: **Settings > Trigger App Settings**
+happily opens a `Menu2` returned directly. Only the watch tells the truth.
 
 ### The extra time zone
 
@@ -66,7 +108,7 @@ export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 export SDK="$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-9.2.0-2026-06-09-92a1605b2"
 
 "$SDK/bin/monkeyc" \
-  -o bin/DigitalClassic.prg \
+  -o bin/Fenix5X.prg \
   -f monkey.jungle \
   -y developer_key.der \
   -d fenix8solar51mm \
@@ -77,19 +119,31 @@ export SDK="$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sd
 
 ```sh
 open -a "$SDK/bin/ConnectIQ.app"
-"$SDK/bin/monkeydo" bin/DigitalClassic.prg fenix8solar51mm
+"$SDK/bin/monkeydo" bin/Fenix5X.prg fenix8solar51mm
 ```
 
 ## Install on the watch
 
-Plug the fenix 8 in over USB and copy the `.prg` across:
+The fenix 8 mounts as **MTP**, not mass storage, so there is no
+`/Volumes/GARMIN` to copy into. Use the helper:
 
 ```sh
-cp bin/DigitalClassic.prg /Volumes/GARMIN/GARMIN/APPS/
+./tools/mtp-push bin/Fenix5X.prg Fenix5X.prg
 ```
 
-Eject, then pick it from Watch Face on the device. Settings live under
-Connect IQ Store app -> the face -> Settings, or in Garmin Express.
+It writes to `GARMIN/APPS` (parent `16777226`, storage `0x00020001`). libmtp's
+own `mtp-sendfile` fails here - it asks the device to infer a storage id from
+the parent and the fenix 8 refuses - so `mtp-push` sets both ids itself. Build
+it with the command at the top of `tools/mtp-push.c`; it needs `libmtp`.
+
+Unplug, then pick the face from Watch Face on the device.
+
+Two things that bite:
+
+- **Garmin Express grabs the USB port.** While it runs, `mtp-push` dies with
+  `libusb_claim_interface() = -3`. Quit Express first.
+- **Verify what landed** rather than trusting the transfer:
+  `mtp-files | grep -A3 Fenix5X` prints the file and its size off the watch.
 
 ## Clock font
 

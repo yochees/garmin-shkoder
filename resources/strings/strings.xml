@@ -1,5 +1,5 @@
 <strings>
-    <string id="AppName">Digital Classic</string>
+    <string id="AppName">Fenix 5X</string>
     <string id="SettLeadingZero">Leading zero on hour</string>
     <string id="SettExtraZone">Show extra time zone</string>
     <string id="SettExtraZonePrompt">A dim row above the time, in the same style as the complication row.</string>

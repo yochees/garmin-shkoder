@@ -18,6 +18,81 @@ import Toybox.WatchUi;
 //! -3:30 Newfoundland, +12:45 Chatham.
 const OFFSET_STEPS = [0, 15, 30, 45];
 
+//! getSettingsView() must hand back a plain View, not a Menu2.
+//!
+//! Returning a Menu2 straight from getSettingsView() builds and runs in the
+//! simulator, but the watch then offers no Customize entry at all. Garmin's own
+//! Analog sample returns a View whose delegate opens the menu, and that is the
+//! shape the firmware accepts - verified against the sample on this watch.
+//!
+//! The sample then waits for MENU, which is dead on a fenix 8: MENU is a long
+//! press of UP and never reaches onMenu() inside a settings view. So the view
+//! opens the menu itself as soon as it is shown, and the button handlers below
+//! are only a fallback.
+class SettingsLauncherView extends WatchUi.View {
+
+    private var _opened as Boolean = false;
+
+    public function initialize() {
+        View.initialize();
+    }
+
+    //! Guarded, because popping the menu shows this view again and an
+    //! unguarded push here would trap the user in a loop they cannot back out
+    //! of.
+    public function onShow() as Void {
+        if (!_opened) {
+            _opened = true;
+            openSettingsMenu();
+        }
+    }
+
+    public function onUpdate(dc as Dc) as Void {
+        dc.clearClip();
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+        dc.clear();
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            dc.getWidth() / 2, dc.getHeight() / 2 - 30,
+            Graphics.FONT_SMALL, "Press START\nfor settings",
+            Graphics.TEXT_JUSTIFY_CENTER);
+    }
+}
+
+//! Every route to the menu, because which button reaches a settings view
+//! differs between devices: START/ENTER, MENU, and the raw key events.
+class SettingsLauncherDelegate extends WatchUi.BehaviorDelegate {
+
+    public function initialize() {
+        BehaviorDelegate.initialize();
+    }
+
+    public function onMenu() as Boolean {
+        openSettingsMenu();
+        return true;
+    }
+
+    public function onSelect() as Boolean {
+        openSettingsMenu();
+        return true;
+    }
+
+    public function onKey(event as WatchUi.KeyEvent) as Boolean {
+        var key = event.getKey();
+        if (key == WatchUi.KEY_ENTER || key == WatchUi.KEY_START ||
+            key == WatchUi.KEY_MENU || key == WatchUi.KEY_DOWN) {
+            openSettingsMenu();
+            return true;
+        }
+        return false;
+    }
+}
+
+function openSettingsMenu() as Void {
+    var menu = new $.SettingsMenu();
+    WatchUi.pushView(menu, new $.SettingsMenuDelegate(menu), WatchUi.SLIDE_IMMEDIATE);
+}
+
 //! Builds the root menu and keeps its sub-labels in step with the properties.
 class SettingsMenu extends WatchUi.Menu2 {
 
@@ -83,6 +158,12 @@ class SettingsMenuDelegate extends WatchUi.Menu2InputDelegate {
     public function initialize(menu as SettingsMenu) {
         Menu2InputDelegate.initialize();
         _menu = menu;
+    }
+
+    //! Backing out of the menu lands on the launcher view, which would leave
+    //! the user staring at a hint screen, so take the launcher with it.
+    public function onBack() as Void {
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
     }
 
     public function onSelect(item as WatchUi.MenuItem) as Void {
