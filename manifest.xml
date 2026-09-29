@@ -8,6 +8,13 @@
                    minApiLevel="3.2.0">
         <iq:products>
             <iq:product id="fenix8solar51mm"/>
+            <iq:product id="fenix8solar47mm"/>
+            <iq:product id="enduro3"/>
+            <iq:product id="fenix7"/>
+            <iq:product id="fenix7x"/>
+            <iq:product id="fenix7pro"/>
+            <iq:product id="fr955"/>
+            <iq:product id="fenix6pro"/>
         </iq:products>
         <iq:permissions>
             <iq:uses-permission id="SensorHistory"/>

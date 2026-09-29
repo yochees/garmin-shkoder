@@ -1,4 +1,4 @@
-# Fenix 5X - Connect IQ watch face
+# Shkoder - Connect IQ watch face
 
 This directory **is** the repo. One project, one canonical checkout, remote at
 `github.com/yochees/fenix5x-watchface` (private).
@@ -12,14 +12,15 @@ That single fact drives most of what follows.
 
 | | |
 | --- | --- |
-| name on the watch | **Fenix 5X** |
-| file pushed | `Fenix5X.prg` |
+| name on the watch | **Shkoder** |
+| file pushed | `Shkoder.prg` |
 | local checkout | `~/Code/garmin` |
 | GitHub remote | `fenix5x-watchface` |
 | source files and classes | `ClassicDigital*` |
 
-It was called *Digital Classic* until 2026-08-17. The display name, the `.prg`
-and the GitHub repo were renamed; the source files and classes were not. There
+It was called *Digital Classic* until 2026-08-17 and *Fenix 5X* until
+2026-09-29. The display name and the `.prg` were renamed; the GitHub repo keeps
+the `fenix5x` name and the source files and classes were not renamed. There
 is no second project - if a task mentions any of these names, it is this one.
 
 `~/Code/garmin` used to hold two faces. The other one, `fenix5x-face` (a fenix
@@ -56,19 +57,19 @@ export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 export SDK="$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-9.2.0-2026-06-09-92a1605b2"
 
 cd ~/Code/garmin
-"$SDK/bin/monkeyc" -o bin/Fenix5X.prg -f monkey.jungle \
+"$SDK/bin/monkeyc" -o bin/Shkoder.prg -f monkey.jungle \
   -y developer_key.der -d fenix8solar51mm -r      # drop -r for a debug build
 
 open -a "$SDK/bin/ConnectIQ.app"
-"$SDK/bin/monkeydo" bin/Fenix5X.prg fenix8solar51mm   # holds the terminal - background it
+"$SDK/bin/monkeydo" bin/Shkoder.prg fenix8solar51mm   # holds the terminal - background it
 
-./tools/mtp-push bin/Fenix5X.prg Fenix5X.prg
+./tools/mtp-push bin/Shkoder.prg Shkoder.prg
 ```
 
 - The watch is **MTP**, not mass storage - there is no `/Volumes/GARMIN`.
 - **Quit Garmin Express first**, or the push dies with
   `libusb_claim_interface() = -3`.
-- Confirm what landed with `mtp-files | grep -A3 Fenix5X`, rather than
+- Confirm what landed with `mtp-files | grep -A3 Shkoder`, rather than
   trusting the transfer message.
 - `mtp-detect` reporting "No raw devices found" usually just means the charging
   clip is seated for power but not data.

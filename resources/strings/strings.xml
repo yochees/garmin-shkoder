@@ -1,5 +1,5 @@
 <strings>
-    <string id="AppName">Fenix 5X</string>
+    <string id="AppName">Shkoder</string>
     <string id="SettLeadingZero">Leading zero on hour</string>
     <string id="SettExtraZoneLabel">Time zone label</string>
     <string id="SettExtraZoneLabelPrompt">Up to six characters, for example HOME, LON or NY. Leave empty for no label.</string>

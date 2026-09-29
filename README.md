@@ -1,12 +1,13 @@
-# Fenix 5X
+# Shkoder
 
 A rebuild of the fenix 5 Plus stock digital watch face for the **fenix 8 Solar /
 tactix 8 Solar 51mm** (280x280, MIP).
 
-> **Naming.** The face is called **Fenix 5X** on the watch and ships as
-> `Fenix5X.prg`. It was called *Digital Classic* until 2026-08-17, so the repo,
-> the source files and the classes are all still `ClassicDigital*`. Same thing,
-> older name - do not go looking for a second project.
+> **Naming.** The face is called **Shkoder** on the watch and ships as
+> `Shkoder.prg`. It was called *Digital Classic* until 2026-08-17 and *Fenix 5X*
+> until 2026-09-29, so the repo is still `fenix5x-watchface` and the source
+> files and classes are still `ClassicDigital*`. Same thing, older names - do
+> not go looking for a second project.
 
 - Large centred time, no colon, with tightened letter spacing
 - Two complications on one row below the time, separated by a dim `|`
@@ -122,7 +123,7 @@ export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 export SDK="$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-9.2.0-2026-06-09-92a1605b2"
 
 "$SDK/bin/monkeyc" \
-  -o bin/Fenix5X.prg \
+  -o bin/Shkoder.prg \
   -f monkey.jungle \
   -y developer_key.der \
   -d fenix8solar51mm \
@@ -133,7 +134,7 @@ export SDK="$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sd
 
 ```sh
 open -a "$SDK/bin/ConnectIQ.app"
-"$SDK/bin/monkeydo" bin/Fenix5X.prg fenix8solar51mm
+"$SDK/bin/monkeydo" bin/Shkoder.prg fenix8solar51mm
 ```
 
 ## Install on the watch
@@ -142,7 +143,7 @@ The fenix 8 mounts as **MTP**, not mass storage, so there is no
 `/Volumes/GARMIN` to copy into. Use the helper:
 
 ```sh
-./tools/mtp-push bin/Fenix5X.prg Fenix5X.prg
+./tools/mtp-push bin/Shkoder.prg Shkoder.prg
 ```
 
 It writes to `GARMIN/APPS` (parent `16777226`, storage `0x00020001`). libmtp's
@@ -157,7 +158,7 @@ Two things that bite:
 - **Garmin Express grabs the USB port.** While it runs, `mtp-push` dies with
   `libusb_claim_interface() = -3`. Quit Express first.
 - **Verify what landed** rather than trusting the transfer:
-  `mtp-files | grep -A3 Fenix5X` prints the file and its size off the watch.
+  `mtp-files | grep -A3 Shkoder` prints the file and its size off the watch.
 
 ## Clock font
 
