@@ -13,7 +13,9 @@ import Toybox.Weather;
 
 // ---------------------------------------------------------------------------
 // Layout constants. Everything that controls the look lives here - tune these
-// in the simulator, they are all in pixels on the 280x280 screen.
+// in the simulator, they are all in pixels on the 280x280 screen. onLayout()
+// scales them about the screen centre for other sizes (see scaleY()), so on
+// 280x280 they are used exactly as written.
 // ---------------------------------------------------------------------------
 
 const TIME_Y = 140;         // vertical centre of the big time block
@@ -30,7 +32,11 @@ const MAX_TIME_W = 264;     // step the font down if the time is wider than this
 // "8". TRIM_ONE claws that cell back to fake proportional spacing.
 // Set TIME_VECTOR to false to go back to the bitmap FONT_NUMBER_THAI_HOT.
 const TIME_VECTOR = true;
-const TIME_FACE = "BionicSemiBold";
+// Faces in order of preference - getVectorFont() takes the first one the
+// device has. Only fenix 8 Solar and Enduro 3 carry BionicSemiBold; most
+// other vector devices have BionicBold. RobotoCondensedBold is the last
+// vector option before the bitmap fonts.
+const TIME_FACE = ["BionicSemiBold", "BionicBold", "RobotoCondensedBold"];
 const TIME_SIZE = 148;      // requested pixel height; shrinks to fit if needed
 const TRIM_ONE = 0.28;      // fraction of the "1" cell to claw back (see below)
 
@@ -66,12 +72,14 @@ const TOP_Y = TIME_INK_Y - ROW_GAP - TOP_LIFT;  // top field row, above the time
 // FIELD_SIZE is em, not cap height: 37 measures the same 18.5px of digit ink
 // as FONT_TINY did, and 32 - what this uses - about 16px.
 const FIELD_VECTOR = true;
-const FIELD_FACE = "BionicSemiBold";
+const FIELD_FACE = ["BionicSemiBold", "BionicBold", "BionicMedium", "RobotoCondensedBold"];
 const FIELD_SIZE = 32;
 
 const MARK_RADIUS = 133;    // radius of the marker centre
 const MARK_W = 3;           // tangential width
 const MARK_LEN = 6;         // radial length (2:1 against the width)
+
+const REF_SIZE = 280;       // screen width the constants above are tuned on
 
 //! Set to -1 to show the real step count.
 const MOCK_STEPS = -1;
@@ -98,6 +106,16 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
     private var _cx as Number = 140;
     private var _cy as Number = 140;
+
+    // Layout constants scaled to this screen in onLayout().
+    private var _scale as Float = 1.0;
+    private var _timeY as Number = TIME_Y;
+    private var _topY as Number = TOP_Y;
+    private var _fieldY as Number = FIELD_Y;
+    private var _fieldGap as Number = FIELD_GAP;
+    private var _markRadius as Float = MARK_RADIUS.toFloat();
+    private var _markW as Float = MARK_W.toFloat();
+    private var _markLen as Float = MARK_LEN.toFloat();
 
     private var _isAwake as Boolean = true;
     private var _partialUpdatesAllowed as Boolean = false;
@@ -145,6 +163,16 @@ class ClassicDigitalView extends WatchUi.WatchFace {
     public function onLayout(dc as Dc) as Void {
         _cx = dc.getWidth() / 2;
         _cy = dc.getHeight() / 2;
+
+        _scale = dc.getWidth().toFloat() / REF_SIZE;
+        _timeY = scaleY(TIME_Y);
+        _topY = scaleY(TOP_Y);
+        _fieldY = scaleY(FIELD_Y);
+        _fieldGap = scaled(FIELD_GAP);
+        _markRadius = MARK_RADIUS * _scale;
+        _markW = MARK_W * _scale;
+        _markLen = MARK_LEN * _scale;
+
         _timeFont = pickTimeFont(dc);
         _fieldFont = pickFieldFont();
 
@@ -158,14 +186,25 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         }
     }
 
+    //! A length from the 280x280 layout, scaled to this screen.
+    private function scaled(v as Number) as Number {
+        return Math.round(v * _scale).toNumber();
+    }
+
+    //! A y position from the 280x280 layout, measured from the centre so the
+    //! face stays centred on screens of other sizes.
+    private function scaleY(y as Number) as Number {
+        return _cy + scaled(y - REF_SIZE / 2);
+    }
+
     //! Prefer the vector face at the largest size that still fits four wide
     //! digits, falling back to the built-in bitmap numerals.
     private function pickTimeFont(dc as Dc) as FontType {
         if (TIME_VECTOR && (Graphics has :getVectorFont)) {
-            var size = TIME_SIZE;
+            var size = scaled(TIME_SIZE);
             while (size >= 60) {
                 var vf = Graphics.getVectorFont({:face => TIME_FACE, :size => size});
-                if (vf != null && dc.getTextWidthInPixels("8888", vf) <= MAX_TIME_W) {
+                if (vf != null && dc.getTextWidthInPixels("8888", vf) <= scaled(MAX_TIME_W)) {
                     return vf;
                 }
                 size -= 4;
@@ -179,7 +218,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         ];
         for (var i = 0; i < candidates.size(); i++) {
             var f = candidates[i] as FontDefinition;
-            if (dc.getTextWidthInPixels("8888", f) <= MAX_TIME_W) {
+            if (dc.getTextWidthInPixels("8888", f) <= scaled(MAX_TIME_W)) {
                 return f;
             }
         }
@@ -188,7 +227,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
     private function pickFieldFont() as FontType {
         if (FIELD_VECTOR && (Graphics has :getVectorFont)) {
-            var vf = Graphics.getVectorFont({:face => FIELD_FACE, :size => FIELD_SIZE});
+            var vf = Graphics.getVectorFont({:face => FIELD_FACE, :size => scaled(FIELD_SIZE)});
             if (vf != null) {
                 return vf;
             }
@@ -327,7 +366,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
             var g = glyphAt(digits, i);
             var full = dc.getTextWidthInPixels(g, _timeFont);
             // Keep the ink centred inside the narrowed cell.
-            dc.drawText(x - (full - cells[i]) / 2, TIME_Y, _timeFont, g, just);
+            dc.drawText(x - (full - cells[i]) / 2, _timeY, _timeFont, g, just);
             x += cells[i];
         }
     }
@@ -351,7 +390,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
         dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
-            _cx, TOP_Y, _fieldFont, text,
+            _cx, _topY, _fieldFont, text,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
         );
     }
@@ -387,7 +426,7 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
         var total = lw + rw;
         if (both) {
-            total += FIELD_GAP * 2 + sw;
+            total += _fieldGap * 2 + sw;
         }
 
         var just = Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER;
@@ -395,20 +434,20 @@ class ClassicDigitalView extends WatchUi.WatchFace {
 
         dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
         if (lTxt != null) {
-            dc.drawText(x, FIELD_Y, _fieldFont, lTxt, just);
+            dc.drawText(x, _fieldY, _fieldFont, lTxt, just);
             x += lw;
         }
 
         if (both) {
-            x += FIELD_GAP;
+            x += _fieldGap;
             dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(x, FIELD_Y, _fieldFont, "|", just);
-            x += sw + FIELD_GAP;
+            dc.drawText(x, _fieldY, _fieldFont, "|", just);
+            x += sw + _fieldGap;
             dc.setColor(FIELD_COLOR, Graphics.COLOR_TRANSPARENT);
         }
 
         if (rTxt != null) {
-            dc.drawText(x, FIELD_Y, _fieldFont, rTxt, just);
+            dc.drawText(x, _fieldY, _fieldFont, rTxt, just);
         }
     }
 
@@ -563,11 +602,11 @@ class ClassicDigitalView extends WatchUi.WatchFace {
         var vx = _cosT[s];          // tangential
         var vy = _sinT[s];
 
-        var cxp = _cx + MARK_RADIUS * ux;
-        var cyp = _cy + MARK_RADIUS * uy;
+        var cxp = _cx + _markRadius * ux;
+        var cyp = _cy + _markRadius * uy;
 
-        var hl = MARK_LEN / 2.0;
-        var hw = MARK_W / 2.0;
+        var hl = _markLen / 2.0;
+        var hw = _markW / 2.0;
 
         return [
             [(cxp - hl * ux - hw * vx).toNumber(), (cyp - hl * uy - hw * vy).toNumber()],
