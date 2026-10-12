@@ -2,10 +2,10 @@ import Toybox.Application;
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-//! Digital Classic - a rebuild of the fenix 5 Plus stock digital face
+//! Shkoder - a rebuild of the fenix 5 Plus stock digital face
 //! for the fenix 8 Solar / tactix 8 Solar 51mm (280x280 MIP).
-class ClassicDigitalApp extends Application.AppBase {
-    private var _view as ClassicDigitalView?;
+class ShkoderApp extends Application.AppBase {
+    private var _view as ShkoderView?;
 
     public function initialize() {
         AppBase.initialize();
@@ -18,12 +18,12 @@ class ClassicDigitalApp extends Application.AppBase {
     }
 
     public function getInitialView() as [Views] or [Views, InputDelegates] {
-        var view = new $.ClassicDigitalView();
+        var view = new $.ShkoderView();
         _view = view;
 
         // The delegate is what tells us if we blow the per-second power budget.
         if (WatchUi has :WatchFaceDelegate) {
-            return [view, new $.ClassicDigitalDelegate(view)];
+            return [view, new $.ShkoderDelegate(view)];
         }
         return [view];
     }

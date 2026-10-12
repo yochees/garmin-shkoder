@@ -102,7 +102,7 @@ enum FieldType {
 
 //! Big centred time, two minimalist complications below it, and a single
 //! second marker sweeping the rim, kept alive by onPartialUpdate().
-class ClassicDigitalView extends WatchUi.WatchFace {
+class ShkoderView extends WatchUi.WatchFace {
 
     private var _cx as Number = 140;
     private var _cy as Number = 140;

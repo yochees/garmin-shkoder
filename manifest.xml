@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
-    <iq:application entry="ClassicDigitalApp"
+    <iq:application entry="ShkoderApp"
                    id="3E30CD27C6684BA8983F899DA41E32BD"
                    launcherIcon="@Drawables.LauncherIcon"
                    name="@Strings.AppName"

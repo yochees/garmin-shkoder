@@ -1,6 +1,6 @@
 <!-- Phone app / Garmin Express settings. These only show up for a store
      install: a sideloaded copy has no store record, so neither app can fetch
-     this schema - see README. The on-device menu in ClassicDigitalSettings.mc
+     this schema - see README. The on-device menu in ShkoderSettings.mc
      edits the same properties and works either way. -->
 <settings>
 

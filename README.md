@@ -7,13 +7,6 @@ This repo is the source of the **Shkoder** watch face, which can be installed
 from the Connect IQ store:
 <https://apps.garmin.com/apps/dd078d2a-8ced-49be-8507-39fe825e08c3>
 
-> **Naming.** The face is called **Shkoder** on the watch and ships as
-> `Shkoder.prg`. It was called *Digital Classic* until 2026-08-17 and *Fenix 5X*
-> until 2026-09-29. The repo was `fenix5x-watchface` until 2026-10-12 and is now
-> `garmin-shkoder`; the source files and classes are still `ClassicDigital*`.
-> Same thing, older names - do
-> not go looking for a second project.
-
 - Large centred time, no colon, with tightened letter spacing
 - Two complications on one row below the time, separated by a dim `|`
   (default: date + steps)
@@ -23,7 +16,7 @@ from the Connect IQ store:
   mode via `onPartialUpdate()`
 
 > **Before installing on the watch:** check that `MOCK_STEPS` in
-> `source/ClassicDigitalView.mc` is `-1`, which shows the real step count.
+> `source/ShkoderView.mc` is `-1`, which shows the real step count.
 > Setting it to a number freezes the steps field for layout work.
 
 ## Settings
@@ -67,8 +60,8 @@ store install does have a record for the phone app and Garmin Express to fetch
 the schema from. Both routes edit the same properties in
 `resources/settings/properties.xml`; the on-device menu is the only one that
 works for every copy. `AppBase.getSettingsView()` in
-`source/ClassicDigitalApp.mc` provides the menu instead, built in
-`source/ClassicDigitalSettings.mc`.
+`source/ShkoderApp.mc` provides the menu instead, built in
+`source/ShkoderSettings.mc`.
 
 ### Three things that stop getSettingsView() working, all learned the hard way
 
@@ -192,7 +185,7 @@ the source. Set `TIME_FACE` to `null` to fall back to the bitmap numerals.
 ## Tuning the look
 
 Every layout number is a `const` at the top of
-`source/ClassicDigitalView.mc` - time position, gap, ring radii, tick lengths,
+`source/ShkoderView.mc` - time position, gap, ring radii, tick lengths,
 marker width. Change, rebuild, look at it in the simulator.
 
 ## Signing key

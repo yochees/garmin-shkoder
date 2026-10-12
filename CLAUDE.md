@@ -10,21 +10,16 @@ can now be installed from the Connect IQ store, but it was developed
 **sideloaded** over MTP and dev builds still go on that way - that fact drives
 most of what follows.
 
-## Names do not match, and that is expected
+## Names
 
-| | |
-| --- | --- |
-| name on the watch | **Shkoder** |
-| file pushed | `Shkoder.prg` |
-| local checkout | `~/Code/garmin` |
-| GitHub remote | `garmin-shkoder` (was `fenix5x-watchface`) |
-| source files and classes | `ClassicDigital*` |
+Everything is **Shkoder**: the name on the watch, `Shkoder.prg`, the source
+files and classes (`Shkoder*`), and the GitHub repo `garmin-shkoder`. Only the
+local checkout is still `~/Code/garmin`.
 
-It was called *Digital Classic* until 2026-08-17 and *Fenix 5X* until
-2026-09-29. The display name and the `.prg` were renamed, and the GitHub repo was
-renamed from `fenix5x-watchface` to `garmin-shkoder` on 2026-10-12; the source
-files and classes were not renamed. There
-is no second project - if a task mentions any of these names, it is this one.
+Older names for the same face: *Digital Classic* (until 2026-08-17), *Fenix 5X*
+(until 2026-09-29), repo `fenix5x-watchface` (until 2026-10-12), source files
+and classes `ClassicDigital*` (until 2026-10-13). There is no second project -
+if a task mentions any of these names, it is this one.
 
 `~/Code/garmin` used to hold two faces. The other one, `fenix5x-face` (a fenix
 **5X** replica of the 5X stock face, never installed on the watch), was deleted
