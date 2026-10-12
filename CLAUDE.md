@@ -47,9 +47,10 @@ unreachable, and **the simulator will not catch it**:
 Also: **XML app settings can never work for a sideloaded copy.** A sideloaded
 app has no store record, so the Connect IQ phone app does not list it at all
 and Garmin Express lists it but greys its Settings out.
-`resources/settings/settings.xml` was removed for this reason, so store
-installs get no phone settings either; `resources/settings/properties.xml` stays, because
-that is what defines the properties themselves.
+`resources/settings/settings.xml` was removed for this reason, then restored
+on 2026-10-12 for store installs, which do have a store record. Keep it in
+step with the on-device menu - both edit the properties defined in
+`resources/settings/properties.xml`.
 
 ## Build, run, push
 

@@ -46,7 +46,7 @@ The label and offset apply wherever **Time zone** is chosen, so any of the
 three fields can be the second zone - though the label makes it wide enough
 that the top row is the only comfortable home for it.
 
-### Why the settings are on the device and not in the phone app
+### Why the settings are on the device, and the phone app only for store installs
 
 The face was built **sideloaded** - the `.prg` copied into `GARMIN/APPS` over
 MTP rather than installed from the Connect IQ store - and development builds
@@ -60,10 +60,13 @@ settings routes:
   fetches the settings *schema* by app id from the store. No store entry means
   no schema, so its Settings option is greyed out.
 
-So XML app settings (`resources/settings/settings.xml`) could never work for a
-sideloaded copy, and that file has been removed. A store install does have a
-store record, but without `settings.xml` there is still nothing for the phone
-app to show; the on-device menu is the one settings route that works for both. `AppBase.getSettingsView()` in
+So XML app settings (`resources/settings/settings.xml`) can never work for a
+sideloaded copy. The file was removed on 2026-08-17 while the face was
+sideload-only, and restored on 2026-10-12 once it was on the store, where a
+store install does have a record for the phone app and Garmin Express to fetch
+the schema from. Both routes edit the same properties in
+`resources/settings/properties.xml`; the on-device menu is the only one that
+works for every copy. `AppBase.getSettingsView()` in
 `source/ClassicDigitalApp.mc` provides the menu instead, built in
 `source/ClassicDigitalSettings.mc`.
 

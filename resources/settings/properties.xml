@@ -4,10 +4,11 @@
     <!-- Complications: 0 off, 1 date, 2 steps, 3 battery, 4 calories,
          5 distance, 6 notifications, 7 extra time zone, 8 heart rate,
          9 solar intensity, 10 barometer, 11 weather temperature,
-         12 watch temperature. TopField starts at -1,
-         which means "not chosen yet" and is migrated from the ShowExtraZone
-         toggle it replaced - see topFieldProp(). -->
-    <property id="TopField" type="number">-1</property>
+         12 watch temperature. TopField used to default to -1 ("not chosen
+         yet", migrated from the ShowExtraZone toggle it replaced - see
+         topFieldProp()). It is 0 now so the phone app's list has a matching
+         entry; the migration code stays for copies still holding -1. -->
+    <property id="TopField" type="number">0</property>
     <property id="LeftField" type="number">1</property>
     <property id="RightField" type="number">2</property>
 

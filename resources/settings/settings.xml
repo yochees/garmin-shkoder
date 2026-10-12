@@ -1,0 +1,72 @@
+<!-- Phone app / Garmin Express settings. These only show up for a store
+     install: a sideloaded copy has no store record, so neither app can fetch
+     this schema - see README. The on-device menu in ClassicDigitalSettings.mc
+     edits the same properties and works either way. -->
+<settings>
+
+    <setting propertyKey="@Properties.TopField" title="@Strings.SettTopField">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.FieldOff</listEntry>
+            <listEntry value="1">@Strings.FieldDate</listEntry>
+            <listEntry value="2">@Strings.FieldSteps</listEntry>
+            <listEntry value="3">@Strings.FieldBattery</listEntry>
+            <listEntry value="4">@Strings.FieldCalories</listEntry>
+            <listEntry value="5">@Strings.FieldDistance</listEntry>
+            <listEntry value="6">@Strings.FieldNotifications</listEntry>
+            <listEntry value="7">@Strings.FieldZone</listEntry>
+            <listEntry value="8">@Strings.FieldHr</listEntry>
+            <listEntry value="9">@Strings.FieldSolar</listEntry>
+            <listEntry value="10">@Strings.FieldPressure</listEntry>
+            <listEntry value="11">@Strings.FieldTemp</listEntry>
+            <listEntry value="12">@Strings.FieldWatchTemp</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.LeftField" title="@Strings.SettLeftField">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.FieldOff</listEntry>
+            <listEntry value="1">@Strings.FieldDate</listEntry>
+            <listEntry value="2">@Strings.FieldSteps</listEntry>
+            <listEntry value="3">@Strings.FieldBattery</listEntry>
+            <listEntry value="4">@Strings.FieldCalories</listEntry>
+            <listEntry value="5">@Strings.FieldDistance</listEntry>
+            <listEntry value="6">@Strings.FieldNotifications</listEntry>
+            <listEntry value="7">@Strings.FieldZone</listEntry>
+            <listEntry value="8">@Strings.FieldHr</listEntry>
+            <listEntry value="9">@Strings.FieldSolar</listEntry>
+            <listEntry value="10">@Strings.FieldPressure</listEntry>
+            <listEntry value="11">@Strings.FieldTemp</listEntry>
+            <listEntry value="12">@Strings.FieldWatchTemp</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.RightField" title="@Strings.SettRightField">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.FieldOff</listEntry>
+            <listEntry value="1">@Strings.FieldDate</listEntry>
+            <listEntry value="2">@Strings.FieldSteps</listEntry>
+            <listEntry value="3">@Strings.FieldBattery</listEntry>
+            <listEntry value="4">@Strings.FieldCalories</listEntry>
+            <listEntry value="5">@Strings.FieldDistance</listEntry>
+            <listEntry value="6">@Strings.FieldNotifications</listEntry>
+            <listEntry value="7">@Strings.FieldZone</listEntry>
+            <listEntry value="8">@Strings.FieldHr</listEntry>
+            <listEntry value="9">@Strings.FieldSolar</listEntry>
+            <listEntry value="10">@Strings.FieldPressure</listEntry>
+            <listEntry value="11">@Strings.FieldTemp</listEntry>
+            <listEntry value="12">@Strings.FieldWatchTemp</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.LeadingZero" title="@Strings.SettLeadingZero">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ExtraZoneLabel" title="@Strings.SettExtraZoneLabel" prompt="@Strings.SettExtraZoneLabelPrompt">
+        <settingConfig type="alphaNumeric" maxLength="6"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ExtraZoneOffset" title="@Strings.SettExtraZoneOffset" prompt="@Strings.SettExtraZoneOffsetPrompt">
+        <settingConfig type="numeric" min="-12" max="14"/>
+    </setting>
+</settings>
