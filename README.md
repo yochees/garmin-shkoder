@@ -3,13 +3,15 @@
 A rebuild of the fenix 5 Plus stock digital watch face for the **fenix 8 Solar /
 tactix 8 Solar 51mm** (280x280, MIP).
 
-This repo is the source of the **Shkoder** watch face on the Connect IQ store:
+This repo is the source of the **Shkoder** watch face, which can be installed
+from the Connect IQ store:
 <https://apps.garmin.com/apps/dd078d2a-8ced-49be-8507-39fe825e08c3>
 
 > **Naming.** The face is called **Shkoder** on the watch and ships as
 > `Shkoder.prg`. It was called *Digital Classic* until 2026-08-17 and *Fenix 5X*
 > until 2026-09-29. The repo was `fenix5x-watchface` until 2026-10-12 and is now
-> `garmin-shkoder`; the source files and classes are still `ClassicDigital*`. Same thing, older names - do
+> `garmin-shkoder`; the source files and classes are still `ClassicDigital*`.
+> Same thing, older names - do
 > not go looking for a second project.
 
 - Large centred time, no colon, with tightened letter spacing
@@ -46,9 +48,10 @@ that the top row is the only comfortable home for it.
 
 ### Why the settings are on the device and not in the phone app
 
-This face is **sideloaded** - the `.prg` is copied into `GARMIN/APPS` over MTP
-rather than installed from the Connect IQ store. That rules out both official
-settings routes, permanently:
+The face was built **sideloaded** - the `.prg` copied into `GARMIN/APPS` over
+MTP rather than installed from the Connect IQ store - and development builds
+still go on the watch that way. A sideloaded copy rules out both official
+settings routes:
 
 - **Connect IQ phone app** - lists apps from the Garmin *account's*
   installed-app records. A sideloaded app has no record, so the face never
@@ -57,8 +60,10 @@ settings routes, permanently:
   fetches the settings *schema* by app id from the store. No store entry means
   no schema, so its Settings option is greyed out.
 
-So XML app settings (`resources/settings/settings.xml`) can never work here,
-and that file has been removed. `AppBase.getSettingsView()` in
+So XML app settings (`resources/settings/settings.xml`) could never work for a
+sideloaded copy, and that file has been removed. A store install does have a
+store record, but without `settings.xml` there is still nothing for the phone
+app to show; the on-device menu is the one settings route that works for both. `AppBase.getSettingsView()` in
 `source/ClassicDigitalApp.mc` provides the menu instead, built in
 `source/ClassicDigitalSettings.mc`.
 

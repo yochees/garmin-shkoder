@@ -5,9 +5,10 @@ This directory **is** the repo. One project, one canonical checkout, remote at
 listing <https://apps.garmin.com/apps/dd078d2a-8ced-49be-8507-39fe825e08c3>.
 
 A rebuild of the fenix 5 Plus stock digital face for Algis's **fenix 8 Solar
-51mm** (`fenix8solar51mm`, 280x280 MIP). It is the face he actually wears, and
-it is **sideloaded** over MTP - never installed from the Connect IQ store.
-That single fact drives most of what follows.
+51mm** (`fenix8solar51mm`, 280x280 MIP). It is the face he actually wears. It
+can now be installed from the Connect IQ store, but it was developed
+**sideloaded** over MTP and dev builds still go on that way - that fact drives
+most of what follows.
 
 ## Names do not match, and that is expected
 
@@ -43,10 +44,11 @@ unreachable, and **the simulator will not catch it**:
 3. Nothing may wait for a `MENU` press; on fenix 8 that never arrives inside a
    settings view.
 
-Also: **XML app settings can never work here.** A sideloaded app has no store
-record, so the Connect IQ phone app does not list it at all and Garmin Express
-lists it but greys its Settings out. `resources/settings/settings.xml` was
-removed for this reason; `resources/settings/properties.xml` stays, because
+Also: **XML app settings can never work for a sideloaded copy.** A sideloaded
+app has no store record, so the Connect IQ phone app does not list it at all
+and Garmin Express lists it but greys its Settings out.
+`resources/settings/settings.xml` was removed for this reason, so store
+installs get no phone settings either; `resources/settings/properties.xml` stays, because
 that is what defines the properties themselves.
 
 ## Build, run, push
