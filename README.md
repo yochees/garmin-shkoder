@@ -3,10 +3,13 @@
 A rebuild of the fenix 5 Plus stock digital watch face for the **fenix 8 Solar /
 tactix 8 Solar 51mm** (280x280, MIP).
 
+This repo is the source of the **Shkoder** watch face on the Connect IQ store:
+<https://apps.garmin.com/apps/dd078d2a-8ced-49be-8507-39fe825e08c3>
+
 > **Naming.** The face is called **Shkoder** on the watch and ships as
 > `Shkoder.prg`. It was called *Digital Classic* until 2026-08-17 and *Fenix 5X*
-> until 2026-09-29, so the repo is still `fenix5x-watchface` and the source
-> files and classes are still `ClassicDigital*`. Same thing, older names - do
+> until 2026-09-29. The repo was `fenix5x-watchface` until 2026-10-12 and is now
+> `garmin-shkoder`; the source files and classes are still `ClassicDigital*`. Same thing, older names - do
 > not go looking for a second project.
 
 - Large centred time, no colon, with tightened letter spacing

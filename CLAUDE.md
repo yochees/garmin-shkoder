@@ -1,7 +1,8 @@
 # Shkoder - Connect IQ watch face
 
 This directory **is** the repo. One project, one canonical checkout, remote at
-`github.com/yochees/fenix5x-watchface` (private).
+`github.com/yochees/garmin-shkoder` (private). It is the source of the store
+listing <https://apps.garmin.com/apps/dd078d2a-8ced-49be-8507-39fe825e08c3>.
 
 A rebuild of the fenix 5 Plus stock digital face for Algis's **fenix 8 Solar
 51mm** (`fenix8solar51mm`, 280x280 MIP). It is the face he actually wears, and
@@ -15,12 +16,13 @@ That single fact drives most of what follows.
 | name on the watch | **Shkoder** |
 | file pushed | `Shkoder.prg` |
 | local checkout | `~/Code/garmin` |
-| GitHub remote | `fenix5x-watchface` |
+| GitHub remote | `garmin-shkoder` (was `fenix5x-watchface`) |
 | source files and classes | `ClassicDigital*` |
 
 It was called *Digital Classic* until 2026-08-17 and *Fenix 5X* until
-2026-09-29. The display name and the `.prg` were renamed; the GitHub repo keeps
-the `fenix5x` name and the source files and classes were not renamed. There
+2026-09-29. The display name and the `.prg` were renamed, and the GitHub repo was
+renamed from `fenix5x-watchface` to `garmin-shkoder` on 2026-10-12; the source
+files and classes were not renamed. There
 is no second project - if a task mentions any of these names, it is this one.
 
 `~/Code/garmin` used to hold two faces. The other one, `fenix5x-face` (a fenix
